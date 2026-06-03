@@ -1,0 +1,16 @@
+# AI scale assessment overlay.
+# Use with:
+# docker compose -f docker-compose_all.yml -f docker-compose.ai-scale.yml up -d --build xiaozhi-esp32-server-web xiaozhi-esp32-server
+
+services:
+  xiaozhi-esp32-server:
+    image: handsome5201314/xiaozhi-esp32-server:server-ai-scale
+    build:
+      context: ../..
+      dockerfile: Dockerfile-server
+
+  xiaozhi-esp32-server-web:
+    image: handsome5201314/xiaozhi-esp32-server:web-ai-scale
+    build:
+      context: ../..
+      dockerfile: Dockerfile-web
