@@ -1,0 +1,14 @@
+# Copy these snippets into your private Xiaozhi runtime config.
+# Do not commit the real partner_token.
+
+plugins:
+  ai_scale_service:
+    base_url: "https://tongyimohe.cloud"
+    partner_token: "<AI_TOY_PARTNER_TOKEN>"
+    device_id_prefix: "xiaozhi"
+    default_nickname: "本人"
+
+Intent:
+  function_call:
+    functions:
+      - ai_scale_assessment
