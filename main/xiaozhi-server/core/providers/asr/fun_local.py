@@ -5,6 +5,7 @@ import time
 import shutil
 import psutil
 import asyncio
+import torch
 
 from funasr import AutoModel
 from config.logger import setup_logging
@@ -50,7 +51,27 @@ class ASRProvider(ASRProviderBase):
         self.interface_type = InterfaceType.LOCAL
         self.model_dir = config.get("model_dir")
         self.output_dir = config.get("output_dir")  # 修正配置键名
+        self.language = config.get("language", "auto")
+        self.device = config.get("device")
         self.delete_audio_file = delete_audio_file
+
+        if self.device == "cpu":
+            pass
+        elif isinstance(self.device, str) and self.device.startswith("cuda:"):
+            try:
+                device_index = int(self.device.removeprefix("cuda:"))
+            except ValueError as exc:
+                raise ValueError(f"无效的 FunASR 推理设备: {self.device}") from exc
+            if not torch.cuda.is_available() or device_index >= torch.cuda.device_count():
+                raise RuntimeError(
+                    f"FunASR 配置要求使用 {self.device}，但当前容器没有可用的对应 CUDA 设备"
+                )
+        else:
+            raise ValueError(
+                "FunASR 必须显式配置推理设备，可选值为 cpu 或 cuda:<索引>"
+            )
+
+        logger.bind(tag=TAG).info(f"FunASR 推理设备: {self.device}")
 
         # 确保输出目录存在
         os.makedirs(self.output_dir, exist_ok=True)
@@ -60,7 +81,7 @@ class ASRProvider(ASRProviderBase):
                 vad_kwargs={"max_single_segment_time": 30000},
                 disable_update=True,
                 hub="hf",
-                # device="cuda:0",  # 启用GPU加速
+                device=self.device,
             )
 
     async def speech_to_text(
@@ -80,7 +101,7 @@ class ASRProvider(ASRProviderBase):
                     self.model.generate,
                     input=artifacts.pcm_bytes,
                     cache={},
-                    language="auto",
+                    language=self.language,
                     use_itn=True,
                     batch_size_s=60,
                 )
