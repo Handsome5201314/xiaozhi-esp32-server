@@ -74,10 +74,13 @@ async def get_config_from_api_async(config):
             "ip": config["server"].get("ip", ""),
             "port": config["server"].get("port", ""),
             "http_port": config["server"].get("http_port", ""),
+            "websocket": config["server"].get("websocket", ""),
             "vision_explain": config["server"].get("vision_explain", ""),
             "auth_key": config["server"].get("auth_key", ""),
         }
     config_data["server"]["auth"] = {"enabled": auth_enabled}
+    if config.get("medical"):
+        config_data["medical"] = config["medical"]
     # 如果服务器没有prompt_template，则从本地配置读取
     if not config_data.get("prompt_template"):
         config_data["prompt_template"] = config.get("prompt_template")
