@@ -43,4 +43,3 @@ def decode_frame(data: bytes) -> AudioFrame:
     if len(payload) != payload_length:
         raise FrameDecodeError("payload length does not match header")
     return AudioFrame(sequence=sequence, timestamp_ms=timestamp_ms, flags=flags, payload=payload)
-
