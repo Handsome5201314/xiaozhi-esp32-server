@@ -1,0 +1,1 @@
+"""Medical recording domain services."""
