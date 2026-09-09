@@ -154,8 +154,8 @@ class MedicalHandler:
         self._require_session_owner(request.match_info["session_id"], device_id)
         body = await self._json_body(request)
         last_sequence = body.get("last_sequence")
-        if not isinstance(last_sequence, int) or isinstance(last_sequence, bool):
-            raise MedicalGatewayError(422, "INVALID_REQUEST", "last_sequence must be an integer")
+        if not isinstance(last_sequence, int) or isinstance(last_sequence, bool) or last_sequence < -1:
+            raise MedicalGatewayError(422, "INVALID_REQUEST", "last_sequence must be an integer >= -1")
         try:
             result = self.store.finish(request.match_info["session_id"], last_sequence)
         except KeyError as exc:

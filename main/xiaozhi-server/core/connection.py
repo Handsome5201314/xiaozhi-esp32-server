@@ -349,12 +349,14 @@ class ConnectionHandler:
         """消息路由"""
         # 检查是否已经获取到真实的绑定状态
         if not self.bind_completed_event.is_set():
-            # 还没有获取到真实状态，等待直到获取到真实状态或超时
+            # Manager API may need several seconds to return the device profile.
+            # Do not turn a slow lookup into a false "device not registered" prompt.
             try:
-                await asyncio.wait_for(self.bind_completed_event.wait(), timeout=1)
+                await asyncio.wait_for(self.bind_completed_event.wait(), timeout=10)
             except asyncio.TimeoutError:
-                # 超时仍未获取到真实状态，丢弃消息
-                await self._discard_message_with_bind_prompt()
+                self.logger.bind(tag=TAG).warning(
+                    "等待智控台设备状态超时，丢弃当前消息并等待配置完成"
+                )
                 return
 
         # 已经获取到真实状态，检查是否需要绑定

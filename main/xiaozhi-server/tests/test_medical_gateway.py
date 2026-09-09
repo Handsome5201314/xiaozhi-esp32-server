@@ -143,6 +143,44 @@ class MedicalGatewayTest(AioHTTPTestCase):
         self.assertEqual((await response.json())["status"], "completed")
         self.assertTrue((self.root / "sessions" / session_id / "recording.ogg").exists())
 
+    async def test_finish_rejects_invalid_sequence_values(self):
+        response = await self.client.post(
+            "/v1/sessions",
+            headers=self.auth_headers(),
+            json={"device_id": "box-01", "mode": "general", "bed_id": None},
+        )
+        self.assertEqual(response.status, 201)
+        session_id = (await response.json())["session_id"]
+
+        for last_sequence in (-2, True, 1.5, "0", None):
+            with self.subTest(last_sequence=last_sequence):
+                response = await self.client.post(
+                    f"/v1/sessions/{session_id}/finish",
+                    headers=self.auth_headers(),
+                    json={"last_sequence": last_sequence},
+                )
+                self.assertEqual(response.status, 422)
+                self.assertEqual((await response.json())["error"]["code"], "INVALID_REQUEST")
+                self.assertFalse((self.root / "sessions" / session_id / "finish.json").exists())
+
+    async def test_empty_session_can_finish_without_audio_frames(self):
+        response = await self.client.post(
+            "/v1/sessions",
+            headers=self.auth_headers(),
+            json={"device_id": "box-01", "mode": "general", "bed_id": None},
+        )
+        self.assertEqual(response.status, 201)
+        session_id = (await response.json())["session_id"]
+
+        response = await self.client.post(
+            f"/v1/sessions/{session_id}/finish",
+            headers=self.auth_headers(),
+            json={"last_sequence": -1},
+        )
+        self.assertEqual(response.status, 200)
+        self.assertEqual(await response.json(), {"status": "completed", "missing": []})
+        self.assertTrue((self.root / "sessions" / session_id / "recording.ogg").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

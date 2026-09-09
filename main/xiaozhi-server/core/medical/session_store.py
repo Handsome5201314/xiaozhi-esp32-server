@@ -94,8 +94,8 @@ class SessionStore:
         return expected - 1
 
     def finish(self, session_id: str, last_sequence: int) -> FinishResult:
-        if last_sequence < 0:
-            raise ValueError("last_sequence must be non-negative")
+        if last_sequence < -1:
+            raise ValueError("last_sequence must be >= -1")
         sequences = set(self.frame_sequences(session_id))
         missing_values = [sequence for sequence in range(last_sequence + 1) if sequence not in sequences]
         missing = self._ranges(missing_values)
