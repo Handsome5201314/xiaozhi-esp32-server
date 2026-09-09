@@ -1,0 +1,44 @@
+# 当前医疗录音服务的本机运行配置；配置与录音保存在同目录 data 中。
+name: xiaozhi-medical-runtime
+services:
+  server:
+    image: xiaozhi-esp32-server:v0.9.6-medical-gpu-bindwait-20260823
+    pull_policy: never
+    container_name: xiaozhi-esp32-server-v096-medical
+    restart: always
+    ports:
+      - "8000:8000"
+      - "8003:8003"
+    volumes:
+      - type: bind
+        source: ./data
+        target: /opt/xiaozhi-esp32-server/data
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./models/SenseVoiceSmall/model.pt
+        target: /opt/xiaozhi-esp32-server/models/SenseVoiceSmall/model.pt
+        bind:
+          create_host_path: false
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+              count: all
+    networks:
+      - xiaozhi
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8003/xiaozhi/ota/', timeout=3).read(); urllib.request.urlopen('http://127.0.0.1:8000/xiaozhi/v1/', timeout=3).read()"
+      interval: 15s
+      timeout: 8s
+      retries: 4
+      start_period: 60s
+networks:
+  xiaozhi:
+    external: true
+    name: xiaozhi-server_default
