@@ -77,3 +77,4 @@ class OggOpusWriter:
         struct.pack_into("<I", page, 22, ogg_crc(page))
         self.handle.write(page)
         self.page_sequence += 1
+

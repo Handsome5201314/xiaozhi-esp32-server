@@ -11,9 +11,3 @@
 - 启动日志未发现 ERROR 或 Python traceback。未发起真实患者录音、未验证完整设备至 ASR 推理链路。
 - 持久部署入口为 `main/xiaozhi-server/compose.medical-runtime.yaml`，说明为同目录 `README.medical-runtime.md`。运行密钥和私有备份均被 Git 忽略。
 - 本次未升级 main 或生产镜像，未删除旧 worktree 和回退容器。
-
-## 用户后续要求清理旧目录
-
-已对完整旧目录制作 `old-worktree-before-removal.tar`，逐文件 SHA-256 校验 8,261 个文件一致（归档 211,240,960 字节），并保存旧容器日志。确认唯一引用旧目录的是 stopped / restart=no 的回退容器后，删除该容器，以 `git worktree remove --force` 清理用户指定的旧工作目录及 Git 工作树登记。绝对路径在删除前精确核验。
-
-删除后旧路径不存在、Git worktree 列表不再包含该路径；运行中的主目录服务仍 running / healthy，restart-count=0。`server-v0.9.6` 分支和私有备份保留，生产数据未改动。

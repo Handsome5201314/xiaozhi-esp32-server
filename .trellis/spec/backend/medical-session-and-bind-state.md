@@ -42,4 +42,4 @@ HTTP 边界拒绝布尔、非整数、小于 -1 的序号，返回 422 / INVALID
 
 当前 data 权威为 `main/xiaozhi-server/data`，运行参数由 `main/xiaozhi-server/compose.medical-runtime.yaml` 管理；操作与回退见同目录 `README.medical-runtime.md`。运行镜像沿用已验证的 v0.9.6 医疗镜像，不代表 main 已合入 v0.9.6 全部上游变化。
 
-源 worktree 与停用的旧容器已按用户后续要求清理；删除前完整归档至 `.git/runtime-backups/20260909-v096-data/old-worktree-before-removal.tar`，并校验全部 8,261 个文件。迁移后产生的数据只在主目录，恢复历史归档前必须保全新数据。任何后续目录清理都要重新核对运行容器挂载与备份，而不能依赖历史目录名称。
+源 worktree 与停用的旧容器仅作回退副本。迁移后产生的数据只在主目录，回退前必须保全新数据，不能直接启动旧容器。任何后续目录清理都要重新核对运行容器挂载与备份，而不能依赖历史目录名称。

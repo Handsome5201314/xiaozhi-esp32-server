@@ -12,6 +12,7 @@ from aiohttp import web
 from core.auth import AuthManager
 from core.utils.util import get_local_ip, get_vision_url
 from core.api.base_handler import BaseHandler
+from core.security.session import DeviceSessionAuthenticator
 
 TAG = __name__
 
@@ -53,6 +54,10 @@ class OTAHandler(BaseHandler):
         secret_key = config["server"]["auth_key"]
         expire_seconds = auth_config.get("expire_seconds")
         self.auth = AuthManager(secret_key=secret_key, expire_seconds=expire_seconds)
+        session_secret = auth_config.get("device_session_secret") or os.environ.get("METALIO_DEVICE_SESSION_SECRET", "")
+        self.device_session_auth = DeviceSessionAuthenticator(session_secret) if len(session_secret) >= 32 else None
+        self.session_tenant_id = str(auth_config.get("default_tenant_id", "default"))
+        self.session_user_map = auth_config.get("device_user_map", {})
 
         # firmware storage
         self.bin_dir = os.path.join(os.getcwd(), "data", "bin")
@@ -231,6 +236,13 @@ class OTAHandler(BaseHandler):
                 },
             }
 
+            if self.device_session_auth is not None:
+                user_id = str(self.session_user_map.get(device_id, device_id))
+                return_json["device_session_token"] = self.device_session_auth.issue(
+                    self.session_tenant_id, user_id, device_id, client_id,
+                    ["checklist:read", "checklist:write", "voice:session"], ttl_seconds=900,
+                )
+
             # existing mqtt/websocket logic (unchanged)
             mqtt_gateway_endpoint = server_config.get("mqtt_gateway")
 
@@ -282,7 +294,9 @@ class OTAHandler(BaseHandler):
             else:  # 未配置 mqtt_gateway，下发 WebSocket
                 # 如果开启了认证，则进行认证校验
                 token = ""
-                if self.auth_enable:
+                if self.device_session_auth is not None:
+                    token = return_json["device_session_token"]
+                elif self.auth_enable:
                     if self.allowed_devices:
                         if device_id not in self.allowed_devices:
                             token = self.auth.generate_token(client_id, device_id)

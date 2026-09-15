@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 
 import websockets
 from config.logger import setup_logging
@@ -33,6 +34,7 @@ _setup_websockets_logger()
 from core.connection import ConnectionHandler
 from config.config_loader import get_config_from_api_async
 from core.auth import AuthManager, AuthenticationError
+from core.security.session import DeviceSessionAuthenticator, SessionError
 from core.utils.modules_initialize import initialize_modules
 from core.utils.util import check_vad_update, check_asr_update
 
@@ -42,7 +44,7 @@ TAG = __name__
 class WebSocketServer:
     def __init__(self, config: dict):
         self.config = config
-        self.logger = setup_logging()
+        self.logger = setup_logging(config)
         self.config_lock = asyncio.Lock()
         modules = initialize_modules(
             self.logger,
@@ -67,6 +69,8 @@ class WebSocketServer:
         secret_key = self.config["server"]["auth_key"]
         expire_seconds = auth_config.get("expire_seconds", None)
         self.auth = AuthManager(secret_key=secret_key, expire_seconds=expire_seconds)
+        session_secret = auth_config.get("device_session_secret") or os.environ.get("METALIO_DEVICE_SESSION_SECRET", "")
+        self.device_session_auth = DeviceSessionAuthenticator(session_secret) if len(session_secret) >= 32 else None
 
     async def start(self):
         server_config = self.config["server"]
@@ -74,7 +78,11 @@ class WebSocketServer:
         port = int(server_config.get("port", 8000))
 
         async with websockets.serve(
-            self._handle_connection, host, port, process_request=self._http_response
+            self._handle_connection,
+            host,
+            port,
+            process_request=self._http_response,
+            ping_interval=None,
         ):
             await asyncio.Future()
 
@@ -205,7 +213,7 @@ class WebSocketServer:
 
     async def _handle_auth(self, websocket: websockets.ServerConnection):
         # 先认证，后建立连接
-        if self.auth_enable:
+        if self.auth_enable or self.device_session_auth is not None:
             headers = dict(websocket.request.headers)
             device_id = headers.get("device-id", None)
             client_id = headers.get("client-id", None)
@@ -220,8 +228,14 @@ class WebSocketServer:
                 else:
                     raise AuthenticationError("Missing or invalid Authorization header")
                 # 进行认证
-                auth_success = self.auth.verify_token(
-                    token, client_id=client_id, username=device_id
-                )
+                auth_success = False
+                if self.device_session_auth is not None:
+                    try:
+                        context = self.device_session_auth.authenticate("Bearer " + token, device_id, "voice:session")
+                        auth_success = context.client_id == client_id
+                    except SessionError:
+                        auth_success = False
+                if not auth_success:
+                    auth_success = self.auth.verify_token(token, client_id=client_id, username=device_id)
                 if not auth_success:
                     raise AuthenticationError("Invalid token")

@@ -677,12 +677,75 @@ databaseChangeLog:
             encoding: utf8
             path: classpath:db/changelog/202605251426.sql
   - changeSet:
-      id: 202606041030
-      author: codex
+      id: 202606231030
+      author: RanChen
       changes:
         - sqlFile:
             encoding: utf8
-            path: classpath:db/changelog/202606041030.sql
+            path: classpath:db/changelog/202606231030.sql
+  - changeSet:
+      id: 202606261131
+      author: RanChen
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202606261131.sql
+  - changeSet:
+      id: 202607011405
+      author: LauraGPT
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202607011405.sql
+  - changeSet:
+      id: 202607071530
+      author: tykechen
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202607071530.sql
+  - changeSet:
+      id: 202607101200
+      author: tykechen
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202607101200.sql
+  - changeSet:
+      id: 202607290930
+      author: cgd
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202607290930.sql
+  - changeSet:
+      id: 202608061000
+      author: cgd
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608061030.sql
+  - changeSet:
+      id: 202608061800
+      author: cgd
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608061800.sql
+  - changeSet:
+      id: 202608131030
+      author: tykechen
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202608131030.sql
+  - changeSet:
+      id: 202609021000
+      author: JacobNg1
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202609021000.sql
   - changeSet:
       id: 202608221200
       author: codex
@@ -690,3 +753,10 @@ databaseChangeLog:
         - sqlFile:
             encoding: utf8
             path: classpath:db/changelog/202608221200.sql
+  - changeSet:
+      id: 202609151200
+      author: codex
+      changes:
+        - sqlFile:
+            encoding: utf8
+            path: classpath:db/changelog/202609151200.sql

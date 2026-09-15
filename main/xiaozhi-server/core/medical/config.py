@@ -53,3 +53,4 @@ def load_bed_config(path: Path) -> BedConfig:
         seen.add(bed_id)
         beds.append(Bed(id=bed_id, label=label, enabled=enabled))
     return BedConfig(revision=revision, updated_at=updated_at, beds=tuple(beds))
+
