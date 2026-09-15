@@ -4,6 +4,7 @@ from config.logger import setup_logging
 from core.api.ota_handler import OTAHandler
 from core.api.vision_handler import VisionHandler
 from core.api.medical_handler import MedicalHandler, medical_error_middleware
+from core.api.checklist_handler import ChecklistHandler, ChecklistAccessLogger, UnifiedChecklistHandler
 
 TAG = __name__
 
@@ -57,6 +58,12 @@ class SimpleHttpServer:
             ]
         )
         app.add_routes(self.medical_handler.routes())
+        checklist = ChecklistHandler.from_environment()
+        if checklist is not None:
+            app.add_routes(checklist.routes())
+        unified_checklist = UnifiedChecklistHandler.from_environment()
+        if unified_checklist is not None:
+            app.add_routes(unified_checklist.routes())
         return app
 
     async def start(self):

@@ -156,6 +156,14 @@ const routes = [
       return import('../views/ProviderManagement.vue')
     }
   },
+  {
+    path: '/tenant-provider-management',
+    name: 'TenantProviderManagement',
+    component: function () {
+      return import('../views/TenantProviderManagement.vue')
+    },
+    meta: { requiresAuth: true, title: '我的 Provider / Hermes' }
+  },
   // 添加默认角色管理路由
   {
     path: '/agent-template-management',

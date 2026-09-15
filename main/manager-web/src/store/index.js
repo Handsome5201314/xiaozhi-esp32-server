@@ -63,9 +63,9 @@ export default new Vuex.Store({
     // 添加获取公共配置的 action
     fetchPubConfig({ commit }) {
       return new Promise((resolve) => {
-        Api.user.getPubConfig(({ data }) => {
-          if (data.code === 0) {
-            commit('setPubConfig', data.data);
+        Api.user.getPubConfig((response) => {
+          if (response && response.code === 0) {
+            commit('setPubConfig', response.data || {});
           }
           resolve();
         });
