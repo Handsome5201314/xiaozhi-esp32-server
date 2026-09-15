@@ -31,6 +31,7 @@ public class DatasetDTO {
     @Builder
     @Schema(description = "解析器配置")
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ParserConfig implements Serializable {
 
         @Schema(description = "分块 token 数量", example = "128")
@@ -54,6 +55,101 @@ public class DatasetDTO {
         @Schema(description = "自动生成问题数量 (0 表示关闭)", example = "0")
         @JsonProperty("auto_questions")
         private Integer autoQuestions;
+
+        @Schema(description = "标签知识库 ID 列表")
+        @JsonProperty("tag_kb_ids")
+        private List<String> tagKbIds;
+
+        @Schema(description = "自动标签数量", example = "3")
+        @JsonProperty("topn_tags")
+        private Integer topnTags;
+
+        @Schema(description = "文件名向量权重", example = "0.1")
+        @JsonProperty("filename_embd_weight")
+        private Double filenameEmbdWeight;
+
+        @Schema(description = "任务页大小", example = "22")
+        @JsonProperty("task_page_size")
+        private Integer taskPageSize;
+
+        @Schema(description = "页码范围", example = "[[1, 1000000]]")
+        private List<List<Integer>> pages;
+
+        @Schema(description = "RAPTOR 索引配置")
+        private RaptorConfig raptor;
+
+        @Schema(description = "GraphRAG 索引配置")
+        @JsonProperty("graphrag")
+        private GraphRagConfig graphRag;
+
+        @Schema(description = "RAGFlow 扩展解析配置")
+        private Map<String, Object> ext;
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        @Schema(description = "RAPTOR 索引配置")
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class RaptorConfig implements Serializable {
+
+            @Schema(description = "是否启用 RAPTOR", example = "false")
+            @JsonProperty("use_raptor")
+            private Boolean useRaptor;
+
+            @Schema(description = "摘要提示词")
+            private String prompt;
+
+            @Schema(description = "最大 token 数", example = "256")
+            @JsonProperty("max_token")
+            private Integer maxToken;
+
+            @Schema(description = "聚类阈值", example = "0.1")
+            private Double threshold;
+
+            @Schema(description = "最大聚类数", example = "64")
+            @JsonProperty("max_cluster")
+            private Integer maxCluster;
+
+            @Schema(description = "随机种子", example = "0")
+            @JsonProperty("random_seed")
+            private Integer randomSeed;
+
+            @Schema(description = "结构化数据自动禁用", example = "true")
+            @JsonProperty("auto_disable_for_structured_data")
+            private Boolean autoDisableForStructuredData;
+
+            @Schema(description = "RAPTOR 扩展配置")
+            private Map<String, Object> ext;
+        }
+
+        @Data
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        @Schema(description = "GraphRAG 索引配置")
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public static class GraphRagConfig implements Serializable {
+
+            @Schema(description = "是否启用 GraphRAG", example = "false")
+            @JsonProperty("use_graphrag")
+            private Boolean useGraphRag;
+
+            @Schema(description = "实体类型列表")
+            @JsonProperty("entity_types")
+            private List<String> entityTypes;
+
+            @Schema(description = "构建方法: light / general", example = "light")
+            private String method;
+
+            @Schema(description = "是否启用社区发现", example = "false")
+            private Boolean community;
+
+            @Schema(description = "是否启用消歧", example = "false")
+            private Boolean resolution;
+        }
     }
 
     // ========== 请求类 ==========
@@ -67,6 +163,7 @@ public class DatasetDTO {
     @Builder
     @Schema(description = "创建知识库请求")
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class CreateReq implements Serializable {
 
         @NotBlank(message = "知识库名称不能为空")
@@ -90,6 +187,14 @@ public class DatasetDTO {
         @JsonProperty("chunk_method")
         private String chunkMethod;
 
+        @Schema(description = "Pipeline 解析类型", example = "2")
+        @JsonProperty("parse_type")
+        private Integer parseType;
+
+        @Schema(description = "Pipeline ID")
+        @JsonProperty("pipeline_id")
+        private String pipelineId;
+
         @Schema(description = "解析器配置")
         @JsonProperty("parser_config")
         private ParserConfig parserConfig;
@@ -104,6 +209,7 @@ public class DatasetDTO {
     @Builder
     @Schema(description = "更新知识库请求")
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class UpdateReq implements Serializable {
 
         @Schema(description = "知识库名称", example = "updated_dataset")
@@ -125,6 +231,14 @@ public class DatasetDTO {
         @Schema(description = "分块方法: naive / manual / qa / table / paper / book / laws / presentation / picture / one / knowledge_graph / email", example = "naive")
         @JsonProperty("chunk_method")
         private String chunkMethod;
+
+        @Schema(description = "Pipeline 解析类型", example = "2")
+        @JsonProperty("parse_type")
+        private Integer parseType;
+
+        @Schema(description = "Pipeline ID")
+        @JsonProperty("pipeline_id")
+        private String pipelineId;
 
         @Schema(description = "解析器配置")
         @JsonProperty("parser_config")
@@ -277,6 +391,14 @@ public class DatasetDTO {
         @Schema(description = "分块方法", example = "naive")
         @JsonProperty("chunk_method")
         private String chunkMethod;
+
+        @Schema(description = "Pipeline 解析类型", example = "2")
+        @JsonProperty("parse_type")
+        private Integer parseType;
+
+        @Schema(description = "Pipeline ID")
+        @JsonProperty("pipeline_id")
+        private String pipelineId;
 
         @Schema(description = "解析器配置")
         @JsonProperty("parser_config")

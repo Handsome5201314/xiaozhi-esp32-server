@@ -413,7 +413,8 @@ public class RAGFlowAdapter extends KnowledgeBaseAdapter {
             if (StringUtils.isBlank(req.getPermission())) {
                 req.setPermission("me");
             }
-            if (StringUtils.isBlank(req.getChunkMethod())) {
+            if (StringUtils.isBlank(req.getChunkMethod()) && req.getParseType() == null
+                    && StringUtils.isBlank(req.getPipelineId())) {
                 req.setChunkMethod("naive");
             }
 

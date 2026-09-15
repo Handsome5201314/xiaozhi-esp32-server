@@ -379,6 +379,13 @@ public class KnowledgeFilesServiceImpl extends BaseServiceImpl<DocumentDao, Docu
         Map<String, Object> ragConfig = knowledgeBaseService.getRAGConfigByDatasetId(datasetId);
         KnowledgeBaseAdapter adapter = KnowledgeBaseAdapterFactory.getAdapter(extractAdapterType(ragConfig), ragConfig);
 
+        String effectiveChunkMethod = StringUtils.isNotBlank(chunkMethod)
+                ? RAGFlowParserSettings.normalizeChunkMethod(chunkMethod, false)
+                : null;
+        Map<String, Object> effectiveParserConfig = parserConfig != null && !parserConfig.isEmpty()
+                ? RAGFlowParserSettings.normalizeParserConfigMap(parserConfig)
+                : null;
+
         // 构造强类型请求 DTO
         DocumentDTO.UploadReq uploadReq = DocumentDTO.UploadReq.builder()
                 .datasetId(datasetId)
@@ -388,17 +395,13 @@ public class KnowledgeFilesServiceImpl extends BaseServiceImpl<DocumentDao, Docu
                 .build();
 
         // 转换分块方法 (String -> Enum)
-        if (StringUtils.isNotBlank(chunkMethod)) {
-            try {
-                uploadReq.setChunkMethod(DocumentDTO.InfoVO.ChunkMethod.valueOf(chunkMethod.toUpperCase()));
-            } catch (Exception e) {
-                log.warn("无效的分块方法: {}, 将使用后台默认配置", chunkMethod);
-            }
+        if (StringUtils.isNotBlank(effectiveChunkMethod)) {
+            uploadReq.setChunkMethod(DocumentDTO.InfoVO.ChunkMethod.valueOf(effectiveChunkMethod.toUpperCase()));
         }
 
         // 转换解析配置 (Map -> DTO)
-        if (parserConfig != null && !parserConfig.isEmpty()) {
-            uploadReq.setParserConfig(objectMapper.convertValue(parserConfig, DocumentDTO.InfoVO.ParserConfig.class));
+        if (effectiveParserConfig != null && !effectiveParserConfig.isEmpty()) {
+            uploadReq.setParserConfig(RAGFlowParserSettings.toDocumentParserConfig(effectiveParserConfig));
         }
 
         // 执行远程上传 (耗时 IO，在事务之外)
@@ -410,7 +413,7 @@ public class KnowledgeFilesServiceImpl extends BaseServiceImpl<DocumentDao, Docu
 
         // 2. 本地持久化 (通过 self 调用以激活 @Transactional 代理)
         log.info("2. 同步保存本地影子记录: documentId={}", result.getDocumentId());
-        self.saveDocumentShadow(datasetId, result, fileName, chunkMethod, parserConfig);
+        self.saveDocumentShadow(datasetId, result, fileName, result.getChunkMethod(), result.getParserConfig());
 
         log.info("=== 文档上传与影子记录保存成功 ===");
         return result;

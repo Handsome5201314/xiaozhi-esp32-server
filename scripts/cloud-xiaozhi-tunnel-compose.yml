@@ -1,0 +1,12 @@
+services:
+  ws_bridge:
+    image: alpine/socat
+    network_mode: host
+    restart: unless-stopped
+    command: ["-d", "-d", "TCP-LISTEN:8000,fork,reuseaddr,bind=0.0.0.0", "TCP:127.0.0.1:18000"]
+
+  ota_bridge:
+    image: alpine/socat
+    network_mode: host
+    restart: unless-stopped
+    command: ["-d", "-d", "TCP-LISTEN:8002,fork,reuseaddr,bind=0.0.0.0", "TCP:127.0.0.1:18002"]

@@ -59,7 +59,12 @@ AI_SCALE_ASSESSMENT_FUNCTION_DESC = {
 
 
 def _plugin_config(conn: "ConnectionHandler"):
-    return conn.config.get("plugins", {}).get("ai_scale_service", {})
+    plugins = conn.config.get("plugins", {})
+    for key in ("ai_scale_assessment", "ai_scale_service"):
+        config = plugins.get(key)
+        if isinstance(config, dict):
+            return config
+    return {}
 
 
 def _base_url(conn: "ConnectionHandler"):

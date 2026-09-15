@@ -41,6 +41,12 @@ public class KnowledgeBaseDTO implements Serializable {
     @Schema(description = "分块方法")
     private String chunkMethod;
 
+    @Schema(description = "Pipeline 解析类型")
+    private Integer parseType;
+
+    @Schema(description = "Pipeline ID")
+    private String pipelineId;
+
     @Schema(description = "解析器配置(JSON String)")
     private String parserConfig;
 
@@ -67,7 +73,4 @@ public class KnowledgeBaseDTO implements Serializable {
 
     @Schema(description = "文档数量")
     private Integer documentCount;
-
-    @Schema(description = "异常提示")
-    private String errorMessage;
 }

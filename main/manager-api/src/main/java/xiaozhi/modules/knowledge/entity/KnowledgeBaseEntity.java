@@ -48,6 +48,12 @@ public class KnowledgeBaseEntity {
     @Schema(description = "分块方法")
     private String chunkMethod;
 
+    @Schema(description = "Pipeline 解析类型")
+    private Integer parseType;
+
+    @Schema(description = "Pipeline ID")
+    private String pipelineId;
+
     @Schema(description = "解析器配置(JSON String)")
     private String parserConfig;
 

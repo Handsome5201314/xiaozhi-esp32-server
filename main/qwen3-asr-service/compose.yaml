@@ -1,0 +1,55 @@
+name: xiaozhi-qwen3-asr
+
+services:
+  qwen3-asr:
+    image: xiaozhi-qwen3-asr:1.7b-vllm
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xiaozhi-qwen3-asr
+    restart: unless-stopped
+    gpus: all
+    shm_size: 4gb
+    command:
+      - /models/Qwen3-ASR-1.7B
+      - --served-model-name
+      - Qwen/Qwen3-ASR-1.7B
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - "--gpu-memory-utilization"
+      - "0.50"
+      - "--max-num-seqs"
+      - "8"
+      - "--max-model-len"
+      - "32768"
+    environment:
+      HF_HOME: /models/huggingface
+    volumes:
+      - qwen3-asr-cache:/models
+    ports:
+      - "127.0.0.1:10097:8000"
+    networks:
+      - xiaozhi
+    healthcheck:
+      test:
+        - CMD
+        - /usr/bin/python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5).read()"
+      interval: 15s
+      timeout: 8s
+      retries: 40
+      start_period: 10m
+    stop_grace_period: 1m
+
+volumes:
+  qwen3-asr-cache:
+    external: true
+    name: xiaozhi-qwen3-asr-cache
+
+networks:
+  xiaozhi:
+    external: true
+    name: xiaozhi-server_default

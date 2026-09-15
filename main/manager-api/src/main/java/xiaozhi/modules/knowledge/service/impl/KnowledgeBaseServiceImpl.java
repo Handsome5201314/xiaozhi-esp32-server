@@ -222,8 +222,14 @@ public class KnowledgeBaseServiceImpl extends BaseServiceImpl<KnowledgeBaseDao, 
             adapter = KnowledgeBaseAdapterFactory.getAdapter((String) ragConfig.get("type"),
                     ragConfig);
 
+            RAGFlowParserSettings.DatasetParserSettings parserSettings = RAGFlowParserSettings
+                    .normalizeDatasetSettings(dto.getChunkMethod(), dto.getParserConfig(), dto.getParseType(),
+                            dto.getPipelineId(), true);
+            applyParserSettingsToDto(dto, parserSettings);
+
             DatasetDTO.CreateReq createReq = ConvertUtils.sourceToTarget(dto, DatasetDTO.CreateReq.class);
             createReq.setName(SecurityUser.getUser().getUsername() + "_" + dto.getName());
+            applyParserSettingsToCreateReq(createReq, parserSettings);
 
             DatasetDTO.InfoVO ragResponse = adapter.createDataset(createReq);
             if (ragResponse == null || StringUtils.isBlank(ragResponse.getId())) {
@@ -243,7 +249,14 @@ public class KnowledgeBaseServiceImpl extends BaseServiceImpl<KnowledgeBaseDao, 
             // ✅ FULL PERSISTENCE: 严格全量回写 (User Requirement)
             // 使用强类型 DTO 属性获取，不再从 Map 中手动解析 Key
             entity.setTenantId(ragResponse.getTenantId());
-            entity.setChunkMethod(ragResponse.getChunkMethod());
+            entity.setChunkMethod(parserSettings.isPipelineMode() ? null
+                    : firstNonBlank(ragResponse.getChunkMethod(), parserSettings.getChunkMethod()));
+            entity.setParseType(parserSettings.isPipelineMode()
+                    ? parserSettings.getParseType()
+                    : ragResponse.getParseType());
+            entity.setPipelineId(parserSettings.isPipelineMode()
+                    ? parserSettings.getPipelineId()
+                    : ragResponse.getPipelineId());
             entity.setEmbeddingModel(ragResponse.getEmbeddingModel());
             entity.setPermission(ragResponse.getPermission());
 
@@ -254,6 +267,8 @@ public class KnowledgeBaseServiceImpl extends BaseServiceImpl<KnowledgeBaseDao, 
             // Parse Config (JSON)
             if (ragResponse.getParserConfig() != null) {
                 entity.setParserConfig(JsonUtils.toJsonString(ragResponse.getParserConfig()));
+            } else if (!parserSettings.isPipelineMode() && parserSettings.getParserConfig() != null) {
+                entity.setParserConfig(JsonUtils.toJsonString(parserSettings.getParserConfig()));
             }
 
             // Numeric fields
@@ -311,41 +326,46 @@ public class KnowledgeBaseServiceImpl extends BaseServiceImpl<KnowledgeBaseDao, 
             }
         }
 
+        // 🤖 AUTO-FILL: 若 DTO 未传 ragModelId，尝试复用 Entity 中的值
+        if (StringUtils.isBlank(dto.getRagModelId())) {
+            dto.setRagModelId(entity.getRagModelId());
+        }
+
+        boolean parserFieldsProvided = hasParserFields(dto);
+        RAGFlowParserSettings.DatasetParserSettings parserSettings = null;
+
         // RAG Update if needed
         if (StringUtils.isNotBlank(entity.getDatasetId()) && StringUtils.isNotBlank(dto.getRagModelId())) {
             try {
-                // 🤖 AUTO-FILL: 若 DTO 未传 ragModelId (极少情况)，尝试复用 Entity 中的
-                if (StringUtils.isBlank(dto.getRagModelId())) {
-                    dto.setRagModelId(entity.getRagModelId());
-                }
+                boolean parserConfigProvided = StringUtils.isNotBlank(dto.getParserConfig());
 
                 // [FIX] 智能补全：如果 DTO 里的关键字段为空，则使用 Entity 里的旧值
                 // 确保发给 RAGFlow 的请求包含所有必填项 (Partial Update Support)
                 if (StringUtils.isBlank(dto.getPermission())) {
                     dto.setPermission(entity.getPermission());
                 }
-                if (StringUtils.isBlank(dto.getChunkMethod())) {
+                if (!parserFieldsProvided && StringUtils.isBlank(dto.getChunkMethod())) {
                     dto.setChunkMethod(entity.getChunkMethod());
                 }
+                if (!parserFieldsProvided && StringUtils.isBlank(dto.getParserConfig())) {
+                    dto.setParserConfig(entity.getParserConfig());
+                    dto.setParseType(entity.getParseType());
+                    dto.setPipelineId(entity.getPipelineId());
+                }
+
+                parserSettings = RAGFlowParserSettings.normalizeDatasetSettings(dto.getChunkMethod(),
+                        parserConfigProvided ? dto.getParserConfig() : null,
+                        dto.getParseType(), dto.getPipelineId(), false);
+                applyParserSettingsToDto(dto, parserSettings);
 
                 KnowledgeBaseAdapter adapter = getAdapterByModelId(dto.getRagModelId());
                 if (adapter != null) {
                     DatasetDTO.UpdateReq updateReq = ConvertUtils.sourceToTarget(dto, DatasetDTO.UpdateReq.class);
+                    applyParserSettingsToUpdateReq(updateReq, parserSettings, parserConfigProvided);
 
                     // 1. 必填/核心字段前缀处理
                     if (StringUtils.isNotBlank(dto.getName())) {
                         updateReq.setName(SecurityUser.getUser().getUsername() + "_" + dto.getName());
-                    }
-
-                    // 2. 解析器配置支持 (如果 DTO 里有字符串形式的配置，尝试转换，但优先建议 DTO 化)
-                    if (StringUtils.isNotBlank(dto.getParserConfig())) {
-                        try {
-                            DatasetDTO.ParserConfig parserConfig = JsonUtils.parseObject(dto.getParserConfig(),
-                                    DatasetDTO.ParserConfig.class);
-                            updateReq.setParserConfig(parserConfig);
-                        } catch (Exception e) {
-                            log.warn("解析 parser_config 失败，跳过同步", e);
-                        }
                     }
 
                     adapter.updateDataset(entity.getDatasetId(), updateReq);
@@ -361,7 +381,22 @@ public class KnowledgeBaseServiceImpl extends BaseServiceImpl<KnowledgeBaseDao, 
             }
         }
 
+        String originalRagModelId = entity.getRagModelId();
+        String originalPermission = entity.getPermission();
+        String originalChunkMethod = entity.getChunkMethod();
+        String originalParserConfig = entity.getParserConfig();
+        Integer originalParseType = entity.getParseType();
+        String originalPipelineId = entity.getPipelineId();
         BeanUtils.copyProperties(dto, entity);
+        if (StringUtils.isBlank(entity.getRagModelId())) {
+            entity.setRagModelId(originalRagModelId);
+        }
+        if (StringUtils.isBlank(entity.getPermission())) {
+            entity.setPermission(originalPermission);
+        }
+        boolean parserConfigProvided = StringUtils.isNotBlank(dto.getParserConfig());
+        applyParserSettingsToEntity(entity, originalChunkMethod, originalParserConfig, originalParseType,
+                originalPipelineId, parserFieldsProvided, parserConfigProvided, parserSettings);
         knowledgeBaseDao.updateById(entity);
 
         // Clean cache
@@ -485,6 +520,101 @@ public class KnowledgeBaseServiceImpl extends BaseServiceImpl<KnowledgeBaseDao, 
     private KnowledgeBaseAdapter getAdapterByModelId(String modelId) {
         Map<String, Object> config = getValidatedRAGConfig(modelId);
         return KnowledgeBaseAdapterFactory.getAdapter((String) config.get("type"), config);
+    }
+
+    private void applyParserSettingsToDto(KnowledgeBaseDTO dto,
+            RAGFlowParserSettings.DatasetParserSettings parserSettings) {
+        if (parserSettings.isPipelineMode()) {
+            dto.setChunkMethod(null);
+            dto.setParserConfig(null);
+            dto.setParseType(parserSettings.getParseType());
+            dto.setPipelineId(parserSettings.getPipelineId());
+            return;
+        }
+        dto.setChunkMethod(parserSettings.getChunkMethod());
+        dto.setParseType(null);
+        dto.setPipelineId(null);
+    }
+
+    private void applyParserSettingsToCreateReq(DatasetDTO.CreateReq req,
+            RAGFlowParserSettings.DatasetParserSettings parserSettings) {
+        if (parserSettings.isPipelineMode()) {
+            req.setChunkMethod(null);
+            req.setParserConfig(null);
+            req.setParseType(parserSettings.getParseType());
+            req.setPipelineId(parserSettings.getPipelineId());
+            return;
+        }
+        req.setChunkMethod(parserSettings.getChunkMethod());
+        req.setParserConfig(parserSettings.getParserConfig());
+        req.setParseType(null);
+        req.setPipelineId(null);
+    }
+
+    private void applyParserSettingsToUpdateReq(DatasetDTO.UpdateReq req,
+            RAGFlowParserSettings.DatasetParserSettings parserSettings, boolean parserConfigProvided) {
+        if (parserSettings.isPipelineMode()) {
+            req.setChunkMethod(null);
+            req.setParserConfig(null);
+            req.setParseType(parserSettings.getParseType());
+            req.setPipelineId(parserSettings.getPipelineId());
+            return;
+        }
+        req.setChunkMethod(parserSettings.getChunkMethod());
+        req.setParseType(null);
+        req.setPipelineId(null);
+        req.setParserConfig(parserConfigProvided ? firstNonNull(parserSettings.getParserConfig(),
+                new DatasetDTO.ParserConfig()) : null);
+    }
+
+    private boolean hasParserFields(KnowledgeBaseDTO dto) {
+        return StringUtils.isNotBlank(dto.getChunkMethod())
+                || StringUtils.isNotBlank(dto.getParserConfig())
+                || dto.getParseType() != null
+                || StringUtils.isNotBlank(dto.getPipelineId());
+    }
+
+    private String firstNonBlank(String first, String second) {
+        return StringUtils.isNotBlank(first) ? first : second;
+    }
+
+    private <T> T firstNonNull(T first, T second) {
+        return first != null ? first : second;
+    }
+
+    static void applyParserSettingsToEntity(KnowledgeBaseEntity entity, String originalChunkMethod,
+            String originalParserConfig, Integer originalParseType, String originalPipelineId,
+            boolean parserFieldsProvided, boolean parserConfigProvided,
+            RAGFlowParserSettings.DatasetParserSettings parserSettings) {
+        if (!parserFieldsProvided || parserSettings == null) {
+            entity.setChunkMethod(originalChunkMethod);
+            entity.setParserConfig(originalParserConfig);
+            entity.setParseType(originalParseType);
+            entity.setPipelineId(originalPipelineId);
+            return;
+        }
+
+        if (parserSettings.isPipelineMode()) {
+            entity.setChunkMethod(null);
+            entity.setParserConfig(null);
+            entity.setParseType(parserSettings.getParseType());
+            entity.setPipelineId(parserSettings.getPipelineId());
+            return;
+        }
+
+        entity.setChunkMethod(StringUtils.isNotBlank(parserSettings.getChunkMethod())
+                ? parserSettings.getChunkMethod()
+                : originalChunkMethod);
+        entity.setParseType(null);
+        entity.setPipelineId(null);
+
+        if (!parserConfigProvided) {
+            entity.setParserConfig(originalParserConfig);
+            return;
+        }
+        entity.setParserConfig(parserSettings.getParserConfig() == null
+                ? null
+                : JsonUtils.toJsonString(parserSettings.getParserConfig()));
     }
 
     private Map<String, Object> getValidatedRAGConfig(String modelId) {

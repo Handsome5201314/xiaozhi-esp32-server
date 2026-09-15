@@ -84,6 +84,23 @@ export default {
   },
 
   /**
+   * 获取知识库详情
+   * @param {string} datasetId - 知识库ID
+   * @param {Function} callback - 回调函数
+   * @param {Function} errorCallback - 错误回调
+   */
+  getKnowledgeBaseDetail(datasetId, callback, errorCallback) {
+    makeApiRequest({
+      url: `${getServiceUrl()}/datasets/${datasetId}`,
+      method: 'GET',
+      callback: callback,
+      errorCallback: errorCallback,
+      errorMessage: '获取知识库详情失败',
+      retryFunction: () => this.getKnowledgeBaseDetail(datasetId, callback, errorCallback)
+    });
+  },
+
+  /**
    * 创建知识库
    * @param {Object} data - 知识库数据
    * @param {Function} callback - 回调函数
