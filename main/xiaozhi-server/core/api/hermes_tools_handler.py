@@ -10,6 +10,13 @@ from aiohttp import web
 
 from core.security.session import DeviceSessionAuthenticator, SessionError, SessionContext
 
+HERMES_TOOL_ALLOWLIST = frozenset({
+    "checklist.list", "checklist.complete", "daily_summary.read", "medical.record.create",
+})
+
+def _tool_name(description):
+    return description.get("function", {}).get("name") if isinstance(description, dict) else None
+
 
 class OnlineDeviceRegistry:
     """Process-local registry of authenticated device connections."""
@@ -57,7 +64,8 @@ class HermesToolsHandler:
         try:
             context = self._auth(request)
             manager = self._manager(context)
-            tools = manager.get_function_descriptions()
+            tools = [item for item in manager.get_function_descriptions()
+                     if _tool_name(item) in HERMES_TOOL_ALLOWLIST]
             return web.json_response({"code": 0, "data": tools})
         except SessionError as exc:
             return web.json_response({"code": exc.status, "msg": str(exc), "data": None}, status=exc.status)
@@ -68,6 +76,8 @@ class HermesToolsHandler:
             body = await request.json()
             if not isinstance(body, dict) or not isinstance(body.get("name"), str):
                 return web.json_response({"code": 400, "msg": "name is required", "data": None}, status=400)
+            if body["name"] not in HERMES_TOOL_ALLOWLIST:
+                return web.json_response({"code": 404, "msg": "工具不可用", "data": None}, status=404)
             manager = self._manager(context)
             result = await manager.execute_tool(body["name"], body.get("arguments", {}))
             return web.json_response({"code": 0, "data": {
