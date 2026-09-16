@@ -1,35 +1,11 @@
 # Docker安装全模块
 
-version: '3'
-services:
-  # Server模块
-  xiaozhi-esp32-server:
-    image: ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:server_latest
-    container_name: xiaozhi-esp32-server
-    depends_on:
-      - xiaozhi-esp32-server-db
-      - xiaozhi-esp32-server-redis
-    restart: always
-    networks:
-      - default
-    ports:
-      # ws服务端
-      - "8000:8000"
-      # http服务的端口，用于视觉分析接口
-      - "8003:8003"
-    security_opt:
-      - seccomp:unconfined
-    environment:
-      - TZ=Asia/Shanghai
-    volumes:
-      # 配置文件目录
-      - ./data:/opt/xiaozhi-esp32-server/data
-      # 模型文件挂接，很重要
-      - ./models/SenseVoiceSmall/model.pt:/opt/xiaozhi-esp32-server/models/SenseVoiceSmall/model.pt
+name: xiaozhi-server
 
-  # manager-api和manager-web模块
+services:
+  # 管理入口：manager-api和manager-web模块
   xiaozhi-esp32-server-web:
-    image: ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:web_latest
+    image: xiaozhi-esp32-server:web-v096-multitenant-20260915
     container_name: xiaozhi-esp32-server-web
     restart: always
     networks:
@@ -53,6 +29,32 @@ services:
     volumes:
       # 配置文件目录
       - ./uploadfile:/uploadfile
+
+  # Server模块
+  xiaozhi-esp32-server:
+    image: xiaozhi-esp32-server:v0.9.6-multitenant-20260916-llmfix
+    container_name: xiaozhi-esp32-server
+    depends_on:
+      - xiaozhi-esp32-server-db
+      - xiaozhi-esp32-server-redis
+    restart: always
+    networks:
+      - default
+    ports:
+      # ws服务端
+      - "8000:8000"
+      # http服务的端口，用于视觉分析接口
+      - "8003:8003"
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      # 配置文件目录
+      - ./data:/opt/xiaozhi-esp32-server/data
+      # 模型文件挂接，很重要
+      - ./models/SenseVoiceSmall/model.pt:/opt/xiaozhi-esp32-server/models/SenseVoiceSmall/model.pt
+
   # 数据库模块
   xiaozhi-esp32-server-db:
     image: mysql:latest

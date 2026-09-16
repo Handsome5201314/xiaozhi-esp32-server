@@ -3,6 +3,31 @@
 # 方式一：Docker运行全模块
 `0.8.2`版本开始，本项目发行的docker镜像只支持`x86架构`，如果需要在`arm64架构`的CPU上部署，可按照[这个教程](docker-build.md)在本机编译`arm64的镜像`。
 
+## Compose 服务分组
+
+项目中的 Compose 文件统一声明项目名 `xiaozhi-server`。使用 Docker Desktop 时，请在
+**Containers / Apps** 页面展开 `xiaozhi-server`，即可查看 Web、Server、MySQL 和 Redis
+等核心服务；Qwen3 ASR、Caddy、WebSocket/OTA bridge 等可选文件启动后也会归入同一项目。
+
+Docker Desktop 的 **Images** 页面按镜像资源展示，不会按 Compose 项目折叠，这是正常行为。
+Web 服务是管理入口，但 Docker Desktop 不会把依赖容器嵌套成 Web 的子节点。
+
+当前 Docker Compose v2 会直接使用文件中的 `name: xiaozhi-server`。如果使用不支持顶层
+`name` 的旧版 Compose，请在每条命令中追加 `-p xiaozhi-server`，例如：
+
+```bash
+docker compose -p xiaozhi-server -f docker-compose_all.yml up -d
+```
+
+Qwen3 ASR、Caddy 和隧道桥接仍是可选服务，不会被普通全模块命令自动启动。需要启用时，
+使用仓库中对应的 Compose 文件，并保留相同项目名：
+
+```bash
+docker compose -p xiaozhi-server -f main/qwen3-asr-service/compose.yaml up -d
+docker compose -p xiaozhi-server -f scripts/cloud-caddy-compose.yml up -d
+docker compose -p xiaozhi-server -f scripts/cloud-xiaozhi-tunnel-compose.yml up -d
+```
+
 ## 1. 安装docker
 
 如果您的电脑还没安装docker，可以按照这里的教程安装：[docker安装](https://www.runoob.com/docker/ubuntu-docker-install.html)

@@ -1,6 +1,7 @@
 # Docker安装Server
 
-version: '3'
+name: xiaozhi-server
+
 services:
   xiaozhi-esp32-server:
     image: ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:server_latest

@@ -6,3 +6,13 @@ Dockerfile
 tmp/
 data/
 main/manager-web/node_modules/
+main/xiaozhi-server/data/
+main/xiaozhi-server/models/*
+!main/xiaozhi-server/models/snakers4_silero-vad/
+!main/xiaozhi-server/models/snakers4_silero-vad/**
+main/xiaozhi-server/mysql/
+main/xiaozhi-server/uploadfile/
+main/xiaozhi-server/tmp/
+**/node_modules/
+**/__pycache__/
+**/*.pyc

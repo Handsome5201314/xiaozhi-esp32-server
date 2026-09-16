@@ -8,4 +8,25 @@
 
 统一入口为 `GET /v1/checklist/items`、`POST /v1/checklist/items` 和 `POST /v1/checklist/items/{id}/complete`，要求 `Authorization: Bearer <device-session>` 与匹配的 `Device-Id`。旧 `/b/<token>` 路由保持迁移兼容，可由租户策略关闭。
 
+## 每日总结设备接口
+
+设置 `METALIO_DAILY_SUMMARY_ENABLED=1` 后，设备会话可访问 `GET /v1/daily-summary/today`、
+`POST /v1/daily-summary/generate` 和 `POST /v1/daily-summary/ack`。接口要求匹配的
+`Device-Id` 与设备会话，并分别使用 `summary:read` / `summary:write` scope。
+`METALIO_DAILY_SUMMARY_STORE` 指向服务端持久化文件（默认 `/data/daily-summary.json`）。
+17:00 定时任务和总结内容由 Hermes 负责；小智 Server 不自行调度。未注入 Hermes 生成器时，
+生成接口返回 503，不会伪造空总结；生产部署应替换为数据库存储
+并接入用户绑定的 Hermes 实例。
+
+设备使用带 `summary:read` scope 的短期会话重新完成 WebSocket hello 后，服务会按租户、用户、
+设备和日期读取已保存总结并补发 `daily_summary` 消息。旧固定 token/白名单连接没有租户上下文，
+不会触发补发。当前 JSON 存储仅适用于单进程迁移验证；多进程生产环境必须接入共享数据库/锁。
+
+## Hermes 工具网关契约
+
+Hermes 通过小智 Server 的 `GET /v1/hermes/tools` 获取当前设备可用工具，使用
+`POST /v1/hermes/tools/call` 调用工具。两者都要求设备短期会话和 `tools:call` scope，且
+`Device-Id` 必须与会话一致。工具管理器由 Server 侧按会话上下文创建，因此胸卡工具、待办
+和医疗数据仍由 Server 做租户隔离；Hermes 不直接连接设备，也不会获得第三方密钥。
+
 Provider/Hermes 地址默认必须为 HTTPS，并拒绝回环、内网、链路本地和云元数据地址；管理员允许的受控地址应通过 resolver 的 allowlist 配置。第三方密钥只写入 manager-api 的 `ai_provider_secret` 密文列，接口只返回 `secretRef` 和掩码。

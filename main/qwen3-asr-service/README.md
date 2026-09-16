@@ -11,8 +11,11 @@
 
 ```powershell
 & main/qwen3-asr-service/Download-Model.ps1
-docker compose -f main/qwen3-asr-service/compose.yaml up -d --build
+docker compose -p xiaozhi-server -f main/qwen3-asr-service/compose.yaml up -d --build
 ```
+
+Compose 项目名固定为 `xiaozhi-server`，因此该可选服务会和小智核心服务显示在同一个
+Docker Desktop Containers / Apps 项目下；旧版 Compose 也可以继续使用命令中的 `-p` 参数。
 
 运行镜像以本机已有的 vLLM nightly 固定摘要为基础，只补充官方 `audio` extra
 所需的 PyAV、SciPy、SoundFile 与 SoXR。首次部署前需要把模型权重放入命名卷；
@@ -40,7 +43,7 @@ Compose 声明为外部卷，因此停止或重建服务不会删除模型。
 先在智控台把智能体 ASR 切回 `ASR_FunASR`，再停止服务：
 
 ```powershell
-docker compose -f main/qwen3-asr-service/compose.yaml stop qwen3-asr
+docker compose -p xiaozhi-server -f main/qwen3-asr-service/compose.yaml stop qwen3-asr
 ```
 
 停止容器不会删除模型缓存。

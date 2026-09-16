@@ -1,4 +1,4 @@
-name: xiaozhi-qwen3-asr
+name: xiaozhi-server
 
 services:
   qwen3-asr:

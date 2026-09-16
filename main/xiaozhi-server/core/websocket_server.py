@@ -116,7 +116,7 @@ class WebSocketServer:
         """处理新连接，每次创建独立的ConnectionHandler"""
         # 先认证，后建立连接
         try:
-            await self._handle_auth(websocket)
+            session_context = await self._handle_auth(websocket)
         except AuthenticationError:
             await websocket.send("认证失败")
             await websocket.close()
@@ -131,6 +131,7 @@ class WebSocketServer:
             self._intent,
             self,  # 传入server实例
         )
+        handler.session_context = session_context
         try:
             await handler.handle_connection(websocket)
         except Exception as e:
@@ -219,7 +220,7 @@ class WebSocketServer:
             client_id = headers.get("client-id", None)
             if self.allowed_devices and device_id in self.allowed_devices:
                 # 如果属于白名单内的设备，不校验token，直接放行
-                return
+                return None
             else:
                 # 否则校验token
                 token = headers.get("authorization", "")
@@ -229,13 +230,19 @@ class WebSocketServer:
                     raise AuthenticationError("Missing or invalid Authorization header")
                 # 进行认证
                 auth_success = False
+                context = None
+                session_context = None
                 if self.device_session_auth is not None:
                     try:
                         context = self.device_session_auth.authenticate("Bearer " + token, device_id, "voice:session")
                         auth_success = context.client_id == client_id
+                        if auth_success:
+                            session_context = context
                     except SessionError:
                         auth_success = False
                 if not auth_success:
                     auth_success = self.auth.verify_token(token, client_id=client_id, username=device_id)
                 if not auth_success:
                     raise AuthenticationError("Invalid token")
+                return session_context
+        return None

@@ -45,6 +45,7 @@ from core.utils.prompt_manager import PromptManager
 from core.utils.voiceprint_provider import VoiceprintProvider
 from core.utils.util import get_system_error_response
 from core.utils import textUtils
+from core.security.session import SessionContext
 
 
 TAG = __name__
@@ -92,6 +93,7 @@ class ConnectionHandler:
         self.session_id = str(uuid.uuid4())
         self.logger = setup_logging()
         self.server = server  # 保存server实例的引用
+        self.session_context: SessionContext | None = None
 
         self.need_bind = False  # 是否需要绑定设备
         self.bind_completed_event = asyncio.Event()
@@ -622,7 +624,9 @@ class ConnectionHandler:
             self.logger = create_connection_logger(self.selected_module_str)
 
             """初始化组件"""
-            if self.config.get("prompt") is not None:
+            # An explicitly empty agent prompt is meaningful: keep it empty and
+            # do not wrap it in the global base-prompt template.
+            if self.config.get("prompt"):
                 user_prompt = self.config["prompt"]
                 # 使用快速提示词进行初始化
                 prompt = self.prompt_manager.get_quick_prompt(user_prompt)
@@ -659,6 +663,13 @@ class ConnectionHandler:
             self.logger.bind(tag=TAG).error(f"实例化组件失败: {e}")
 
     def _init_prompt_enhancement(self):
+
+        # Preserve the configured empty prompt verbatim.  This is required for
+        # user-managed Hermes/provider sessions where the Server must not add a
+        # hidden role or identity prompt.
+        if not self.config.get("prompt"):
+            self.logger.bind(tag=TAG).debug("智能体 system prompt 为空，跳过增强")
+            return
 
         # 更新上下文信息
         self.prompt_manager.update_context_info(self, self.client_ip)

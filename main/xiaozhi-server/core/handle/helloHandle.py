@@ -60,6 +60,28 @@ async def handleHelloMessage(conn: "ConnectionHandler", msg_json):
 
     await conn.websocket.send(json.dumps(conn.welcome_msg))
 
+    # A reconnecting device may have missed its daily summary while offline.
+    # Only a validated short-lived session can use this path; legacy auth has
+    # no tenant/user context and is intentionally excluded.
+    if conn.session_context is not None and conn.session_context.allows("summary:read"):
+        try:
+            from core.api.daily_summary_handler import from_environment
+            summary_handler = from_environment()
+            if summary_handler is not None:
+                import datetime
+                item = await summary_handler.store.get(
+                    conn.session_context, datetime.date.today().isoformat())
+                if item and item.get("status") == "ready":
+                    await conn.websocket.send(json.dumps({
+                        "type": "daily_summary",
+                        "date": item["date"],
+                        "title": item.get("title", "今日总结"),
+                        "content": item["content"],
+                        "updated_at": item.get("updated_at"),
+                    }, ensure_ascii=False))
+        except Exception as exc:
+            conn.logger.bind(tag=TAG).warning("每日总结补发失败: %s", type(exc).__name__)
+
     # The device waits for the server hello before processing MCP messages.
     if features and features.get("mcp"):
         asyncio.create_task(send_mcp_initialize_message(conn))

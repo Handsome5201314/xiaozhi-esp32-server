@@ -1,3 +1,5 @@
+name: xiaozhi-server
+
 services:
   ws_bridge:
     image: alpine/socat

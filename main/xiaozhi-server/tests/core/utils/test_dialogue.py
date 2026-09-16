@@ -72,6 +72,20 @@ async def test_get_llm_dialogue_with_memory_substitutes_into_system_message():
     assert "<memory></memory>" not in system["content"]
 
 
+def test_get_llm_dialogue_with_memory_accepts_current_speaker():
+    d = Dialogue()
+    d.update_system_message("You are a clinical assistant.")
+
+    msgs = d.get_llm_dialogue_with_memory(
+        None,
+        {"speakers": ["speaker-1,李医生,主治医生"]},
+        "李医生",
+    )
+
+    system = next(m for m in msgs if m["role"] == "system")
+    assert "当前说话人：李医生" in system["content"]
+
+
 @pytest.mark.asyncio
 async def test_get_llm_dialogue_separates_temporary_few_shot_from_actual_history():
     d = Dialogue()

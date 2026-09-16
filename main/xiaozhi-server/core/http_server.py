@@ -5,6 +5,7 @@ from core.api.ota_handler import OTAHandler
 from core.api.vision_handler import VisionHandler
 from core.api.medical_handler import MedicalHandler, medical_error_middleware
 from core.api.checklist_handler import ChecklistHandler, ChecklistAccessLogger, UnifiedChecklistHandler
+from core.api.daily_summary_handler import from_environment as daily_summary_from_environment
 
 TAG = __name__
 
@@ -64,6 +65,9 @@ class SimpleHttpServer:
         unified_checklist = UnifiedChecklistHandler.from_environment()
         if unified_checklist is not None:
             app.add_routes(unified_checklist.routes())
+        daily_summary = daily_summary_from_environment()
+        if daily_summary is not None:
+            app.add_routes(daily_summary.routes())
         return app
 
     async def start(self):
