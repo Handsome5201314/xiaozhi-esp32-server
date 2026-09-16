@@ -37,6 +37,7 @@ from core.auth import AuthManager, AuthenticationError
 from core.security.session import DeviceSessionAuthenticator, SessionError
 from core.utils.modules_initialize import initialize_modules
 from core.utils.util import check_vad_update, check_asr_update
+from core.api.hermes_tools_handler import OnlineDeviceRegistry
 
 TAG = __name__
 
@@ -71,6 +72,7 @@ class WebSocketServer:
         self.auth = AuthManager(secret_key=secret_key, expire_seconds=expire_seconds)
         session_secret = auth_config.get("device_session_secret") or os.environ.get("METALIO_DEVICE_SESSION_SECRET", "")
         self.device_session_auth = DeviceSessionAuthenticator(session_secret) if len(session_secret) >= 32 else None
+        self.online_devices = OnlineDeviceRegistry()
 
     async def start(self):
         server_config = self.config["server"]
@@ -132,11 +134,15 @@ class WebSocketServer:
             self,  # 传入server实例
         )
         handler.session_context = session_context
+        if session_context is not None:
+            self.online_devices.register(session_context, handler)
         try:
             await handler.handle_connection(websocket)
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"处理连接时出错: {e}")
         finally:
+            if session_context is not None:
+                self.online_devices.remove(session_context, handler)
             # 强制关闭连接（如果还没有关闭的话）
             try:
                 # 安全地检查WebSocket状态并关闭
