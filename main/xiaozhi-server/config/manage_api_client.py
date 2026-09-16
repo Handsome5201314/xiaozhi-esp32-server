@@ -252,6 +252,15 @@ async def get_correct_words(instance, mac_address: str) -> Optional[Dict]:
     )
 
 
+@api_guard("获取 Hermes 路由失败")
+async def get_hermes_routing(instance, tenant_id: str, user_id: str, device_id: str) -> Optional[list]:
+    """Load tenant-scoped Hermes routing; plaintext secrets remain in Server memory only."""
+    return await instance._execute_async_request(
+        "POST", "/config/hermes-routing",
+        json={"tenantId": int(tenant_id), "userId": int(user_id), "deviceId": device_id},
+    )
+
+
 @api_guard("生成并保存聊天记录总结失败")
 async def generate_and_save_chat_summary(instance, session_id: str) -> Optional[Dict]:
     """生成并保存聊天记录总结（守护线程中调用，服务已关闭时静默返回 None）"""
