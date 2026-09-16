@@ -58,6 +58,14 @@ async def handleHelloMessage(conn: "ConnectionHandler", msg_json):
             conn.logger.bind(tag=TAG).debug("客户端启用了服务端AEC")
             conn.client_aec = True
 
+    # Preserve Metalio E-Ink 4 capability declarations verbatim for routing
+    # and UI diagnostics; never infer or overwrite empty agent fields.
+    capabilities = msg_json.get("capabilities") or msg_json.get("device_capabilities")
+    if isinstance(capabilities, dict) and capabilities.get("model") == "metalio-e-ink-4":
+        conn.device_capabilities = dict(capabilities)
+    elif isinstance(msg_json.get("model"), str) and msg_json.get("model") == "metalio-e-ink-4":
+        conn.device_capabilities = {k: msg_json.get(k) for k in ("model", "display", "orientation", "features") if k in msg_json}
+
     await conn.websocket.send(json.dumps(conn.welcome_msg))
 
     # A reconnecting device may have missed its daily summary while offline.

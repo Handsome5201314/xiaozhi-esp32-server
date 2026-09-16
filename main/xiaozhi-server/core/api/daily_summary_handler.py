@@ -122,8 +122,11 @@ class DailySummaryHandler:
         ]
 
     def _auth(self, request: web.Request, scope: str = "summary:read") -> SessionContext:
-        return self.authenticator.authenticate(request.headers.get("Authorization"),
-                                               request.headers.get("Device-Id"), scope)
+        context = self.authenticator.authenticate(request.headers.get("Authorization"),
+                                                  request.headers.get("Device-Id"), scope)
+        if scope == "summary:write" and context.client_id != "hermes":
+            raise SessionError(403, "仅 Hermes 可写入每日总结")
+        return context
 
     async def generate_once(self, context: SessionContext, date: str,
                             content: Optional[str] = None) -> tuple[int, dict]:

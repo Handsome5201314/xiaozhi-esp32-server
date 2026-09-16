@@ -8,6 +8,7 @@ from core.api.medical_handler import MedicalHandler, medical_error_middleware
 from core.api.checklist_handler import ChecklistHandler, ChecklistAccessLogger, UnifiedChecklistHandler
 from core.api.daily_summary_handler import from_environment as daily_summary_from_environment
 from core.api.hermes_tools_handler import HermesToolsHandler
+from core.api.quiz_handler import from_environment as quiz_from_environment
 from core.security.session import DeviceSessionAuthenticator
 
 TAG = __name__
@@ -72,6 +73,9 @@ class SimpleHttpServer:
         daily_summary = daily_summary_from_environment()
         if daily_summary is not None:
             app.add_routes(daily_summary.routes())
+        quiz = quiz_from_environment()
+        if quiz is not None:
+            app.add_routes(quiz.routes())
         if self.websocket_server is not None and os.environ.get("METALIO_HERMES_TOOLS_ENABLED") == "1":
             secret = self.config["server"].get("auth", {}).get("device_session_secret") or os.environ.get("METALIO_DEVICE_SESSION_SECRET", "")
             if len(secret) < 32:

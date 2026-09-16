@@ -14,7 +14,7 @@ class DailySummaryHandlerTest(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.auth = DeviceSessionAuthenticator("x" * 32)
-        self.token = self.auth.issue("tenant-a", "user-a", "AA:BB:CC:DD:EE:01", "client", ["summary:read", "summary:write"])
+        self.token = self.auth.issue("tenant-a", "user-a", "AA:BB:CC:DD:EE:01", "hermes", ["summary:read", "summary:write"])
         self.handler = DailySummaryHandler(self.auth, DailySummaryStore(str(Path(self.tmp.name) / "summary.json")))
         app = web.Application()
         app.add_routes(self.handler.routes())
