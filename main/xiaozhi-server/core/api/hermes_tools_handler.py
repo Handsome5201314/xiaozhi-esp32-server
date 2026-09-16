@@ -12,6 +12,7 @@ from core.security.session import DeviceSessionAuthenticator, SessionError, Sess
 
 HERMES_TOOL_ALLOWLIST = frozenset({
     "checklist.list", "checklist.complete", "daily_summary.read", "medical.record.create",
+    "quiz.subjects", "quiz.questions.next", "quiz.questions.answer", "quiz.wrong_answers",
 })
 
 def _tool_name(description):
