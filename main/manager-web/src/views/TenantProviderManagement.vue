@@ -13,6 +13,12 @@
         <el-table-column prop="secretRef" label="密钥" width="150">
           <template slot-scope="scope"><span>{{ scope.row.secretRef ? '已配置（不可读）' : '未配置' }}</span></template>
         </el-table-column>
+        <el-table-column v-if="hasHermes" label="总结接收" width="100">
+          <template slot-scope="scope"><el-tag v-if="scope.row.capability === 'hermes'" :type="scope.row.summaryReceiveEnabled === 0 ? 'info' : 'success'">{{ scope.row.summaryReceiveEnabled === 0 ? '关闭' : '开启' }}</el-tag></template>
+        </el-table-column>
+        <el-table-column v-if="hasHermes" label="最近状态" width="180">
+          <template slot-scope="scope"><span v-if="scope.row.capability === 'hermes'">{{ scope.row.lastSummaryError || (scope.row.lastSummaryAt ? '最近生成成功' : '尚未生成') }}</span></template>
+        </el-table-column>
         <el-table-column label="操作" width="230">
           <template slot-scope="scope"><el-button type="text" @click="open(scope.row)">编辑</el-button><el-button type="text" @click="putSecret(scope.row)">更新密钥</el-button><el-button type="text" @click="remove(scope.row)">删除</el-button></template>
         </el-table-column>
@@ -26,6 +32,7 @@
         <el-form-item label="HTTPS 地址"><el-input v-model="form.baseUrl" /></el-form-item>
         <el-form-item label="模型名称"><el-input v-model="form.modelName" /></el-form-item>
         <el-form-item label="优先级"><el-input-number v-model="form.priority" :min="0" :max="9999" /></el-form-item>
+        <el-form-item v-if="form.capability === 'hermes'" label="接收总结"><el-switch v-model="form.summaryReceiveEnabled" :active-value="1" :inactive-value="0" /></el-form-item>
       </el-form>
       <span slot="footer"><el-button @click="visible = false">取消</el-button><el-button type="primary" @click="save">保存</el-button></span>
     </el-dialog>
@@ -38,10 +45,11 @@ import HeaderBar from '@/components/HeaderBar.vue'
 export default {
   components: { HeaderBar },
   data () { return { profiles: [], loading: false, visible: false, form: {} } },
+  computed: { hasHermes () { return this.profiles.some(item => item.capability === 'hermes') } },
   created () { this.load() },
   methods: {
     load () { this.loading = true; Api.tenantProvider.list(res => { this.loading = false; if (res.data && res.data.code === 0) this.profiles = res.data.data || [] }) },
-    open (row) { this.form = Object.assign({ capability: 'llm', providerType: 'openai', priority: 100, isEnabled: 1 }, row || {}); this.visible = true },
+    open (row) { this.form = Object.assign({ capability: 'llm', providerType: 'openai', priority: 100, isEnabled: 1, summaryReceiveEnabled: 1 }, row || {}); this.visible = true },
     save () { Api.tenantProvider.save(this.form, res => { if (res.data && res.data.code === 0) { this.visible = false; this.load() } else this.$message.error((res.data && res.data.msg) || '保存失败') }) },
     putSecret (row) { this.$prompt('输入新密钥，保存后不会再次显示原文', '更新密钥', { inputType: 'password' }).then(({ value }) => Api.tenantProvider.putSecret(row.id, value, res => { if (res.data && res.data.code === 0) { this.$message.success('密钥已更新'); this.load() } else this.$message.error('密钥更新失败') })).catch(() => {}) },
     remove (row) { this.$confirm('删除该 Provider 配置？', '确认').then(() => Api.tenantProvider.remove(row.id, () => this.load())).catch(() => {}) }

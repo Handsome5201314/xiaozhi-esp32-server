@@ -24,6 +24,10 @@ public class HermesInstanceEntity {
     private Integer isEnabled;
     private Integer isHealthy;
     private Date lastHealthAt;
+    private String toolPermissionsJson;
+    private Integer summaryReceiveEnabled;
+    private Date lastSummaryAt;
+    private String lastSummaryError;
     private Date createdAt;
     private Date updatedAt;
 }
