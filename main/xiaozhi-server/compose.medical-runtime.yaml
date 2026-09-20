@@ -6,6 +6,10 @@ services:
     pull_policy: never
     container_name: xiaozhi-esp32-server-v096-medical
     restart: always
+    environment:
+      METALIO_KNOWLEDGE_ENABLED: "${METALIO_KNOWLEDGE_ENABLED:-0}"
+      METALIO_KNOWLEDGE_SOURCE_ROOT: /opt/xiaozhi-esp32-server/data/knowledge/source
+      METALIO_KNOWLEDGE_PUBLISH_ROOT: /opt/xiaozhi-esp32-server/data/knowledge/published
     ports:
       - "8000:8000"
       - "8003:8003"

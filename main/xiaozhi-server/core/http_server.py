@@ -9,6 +9,7 @@ from core.api.checklist_handler import ChecklistHandler, ChecklistAccessLogger, 
 from core.api.daily_summary_handler import from_environment as daily_summary_from_environment
 from core.api.hermes_tools_handler import HermesToolsHandler
 from core.api.quiz_handler import QuizHandler
+from core.api.knowledge_sync import from_environment as knowledge_from_environment
 from core.security.session import DeviceSessionAuthenticator
 
 TAG = __name__
@@ -73,6 +74,11 @@ class SimpleHttpServer:
         daily_summary = daily_summary_from_environment()
         if daily_summary is not None:
             app.add_routes(daily_summary.routes())
+        knowledge = knowledge_from_environment(
+            self.config["server"].get("auth", {}).get("device_session_secret")
+        )
+        if knowledge is not None:
+            app.add_routes(knowledge.routes())
         if self.websocket_server is not None and os.environ.get("METALIO_QUIZ_ENABLED") == "1":
             secret = self.config["server"].get("auth", {}).get("device_session_secret") or os.environ.get("METALIO_DEVICE_SESSION_SECRET", "")
             if len(secret) < 32:
