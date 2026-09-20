@@ -240,7 +240,11 @@ class OTAHandler(BaseHandler):
                 user_id = str(self.session_user_map.get(device_id, device_id))
                 return_json["device_session_token"] = self.device_session_auth.issue(
                     self.session_tenant_id, user_id, device_id, client_id,
-                    ["checklist:read", "checklist:write", "voice:session"], ttl_seconds=900,
+                    [
+                        "checklist:read", "checklist:write", "voice:session",
+                        "summary:read", "quiz:read", "quiz:write",
+                        "knowledge:read", "knowledge:ack",
+                    ], ttl_seconds=900,
                 )
 
             # existing mqtt/websocket logic (unchanged)
