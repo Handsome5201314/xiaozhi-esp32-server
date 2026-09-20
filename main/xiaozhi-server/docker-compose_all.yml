@@ -32,12 +32,14 @@ services:
 
   # Server模块
   xiaozhi-esp32-server:
-    image: xiaozhi-esp32-server:v0.9.6-multitenant-20260916-llmfix
+    image: xiaozhi-esp32-server:v0.9.6-knowledge-sync-20260920
     container_name: xiaozhi-esp32-server
     depends_on:
       - xiaozhi-esp32-server-db
       - xiaozhi-esp32-server-redis
     restart: always
+    env_file:
+      - ./data/multitenant-runtime.env
     networks:
       - default
     ports:
@@ -49,7 +51,7 @@ services:
       - seccomp:unconfined
     environment:
       - TZ=Asia/Shanghai
-      - METALIO_KNOWLEDGE_ENABLED=${METALIO_KNOWLEDGE_ENABLED:-0}
+      - METALIO_KNOWLEDGE_ENABLED=${METALIO_KNOWLEDGE_ENABLED:-1}
       - METALIO_KNOWLEDGE_SOURCE_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/source
       - METALIO_KNOWLEDGE_PUBLISH_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/published
       - METALIO_KNOWLEDGE_PERMISSIONS_JSON=${METALIO_KNOWLEDGE_PERMISSIONS_JSON:-}

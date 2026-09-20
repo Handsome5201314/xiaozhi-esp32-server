@@ -87,6 +87,11 @@ class KnowledgeSyncTest(unittest.IsolatedAsyncioTestCase):
         response = await self.client.get("/v1/knowledge/manifest", headers=self.headers(self.token_a))
         self.assertEqual(response.status, 413)
 
+    async def test_mac_address_user_id_is_path_safe(self):
+        token = self.auth.issue("tenant-a", "10:20:BA:6E:0B:90", "10:20:BA:6E:0B:90", "device", ["knowledge:read"])
+        response = await self.client.get("/v1/knowledge/manifest", headers=self.headers(token, "10:20:BA:6E:0B:90"))
+        self.assertEqual(response.status, 200)
+
 
 if __name__ == "__main__":
     unittest.main()

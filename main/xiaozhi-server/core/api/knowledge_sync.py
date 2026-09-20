@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import base64
 import json
 import os
 import re
@@ -26,11 +27,16 @@ def _sha256(value: bytes) -> str:
 
 
 def _safe_component(value: str) -> str:
-    if not isinstance(value, str) or not value or value in {".", ".."}:
+    if not isinstance(value, str) or not value or value in {".", ".."} or len(value) > 128:
         raise KnowledgeError(403, "知识库主体无效")
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", value):
+    if any(char in value for char in ("/", "\\", "\x00")):
         raise KnowledgeError(403, "知识库主体无效")
-    return value
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", value):
+        return value
+    # Device-derived user IDs may contain ':' (for example a MAC address).
+    # Encode non-path-safe but otherwise valid identifiers instead of rejecting
+    # them or ever placing raw input into a filesystem path.
+    return "~" + base64.urlsafe_b64encode(value.encode("utf-8")).decode("ascii").rstrip("=")
 
 
 def _utc_now() -> str:

@@ -15,7 +15,7 @@ METALIO_KNOWLEDGE_SOURCE_ROOT/<tenant_id>/<user_id>/**/*.md
 METALIO_KNOWLEDGE_PUBLISH_ROOT/<scope-hash>/
 ```
 
-`tenant_id`、`user_id` 只能包含字母、数字、点、下划线和短横线，目录遍历、符号链接和越界路径会被拒绝或跳过。源文件必须是 UTF-8 Markdown。默认单文件上限为 2 MiB，单租户用户总量上限为 50 MiB，可分别通过 `METALIO_KNOWLEDGE_MAX_FILE_BYTES` 和 `METALIO_KNOWLEDGE_MAX_TOTAL_BYTES` 调整，但 Server 会拒绝超过安全上限的配置。
+安全的 `tenant_id`、`user_id` 使用字母、数字、点、下划线和短横线目录名；设备 MAC 等含冒号但不含路径分隔符的合法 ID 会使用 URL-safe 编码目录名。路径遍历、符号链接和越界路径会被拒绝或跳过。源文件必须是 UTF-8 Markdown。默认单文件上限为 2 MiB，单租户用户总量上限为 50 MiB，可分别通过 `METALIO_KNOWLEDGE_MAX_FILE_BYTES` 和 `METALIO_KNOWLEDGE_MAX_TOTAL_BYTES` 调整，但 Server 会拒绝超过安全上限的配置。
 
 设备会话必须同时满足：
 

@@ -13,6 +13,8 @@ main/xiaozhi-server/models/*
 main/xiaozhi-server/mysql/
 main/xiaozhi-server/uploadfile/
 main/xiaozhi-server/tmp/
+.venv310/
+main/xiaozhi-server/.venv310/
 **/node_modules/
 **/__pycache__/
 **/*.pyc
