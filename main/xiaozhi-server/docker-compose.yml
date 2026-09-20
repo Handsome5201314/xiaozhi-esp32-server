@@ -14,6 +14,7 @@ services:
       - METALIO_KNOWLEDGE_ENABLED=${METALIO_KNOWLEDGE_ENABLED:-0}
       - METALIO_KNOWLEDGE_SOURCE_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/source
       - METALIO_KNOWLEDGE_PUBLISH_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/published
+      - METALIO_KNOWLEDGE_PERMISSIONS_JSON=${METALIO_KNOWLEDGE_PERMISSIONS_JSON:-}
     ports:
       # ws服务端
       - "8000:8000"
