@@ -25,7 +25,10 @@ class KnowledgeSyncTest(unittest.IsolatedAsyncioTestCase):
         self.token_a = self.auth.issue("tenant-a", "user-a", "AA:BB:CC:DD:EE:01", "device", ["knowledge:read", "knowledge:ack"])
         self.token_b = self.auth.issue("tenant-b", "user-b", "AA:BB:CC:DD:EE:02", "device", ["knowledge:read", "knowledge:ack"])
         repository = KnowledgeRepository(str(self.source), str(self.publish), max_file_bytes=1024)
-        policy = KnowledgeAccessPolicy([{"tenant_id": "tenant-a", "user_id": "user-a", "device_ids": ["AA:BB:CC:DD:EE:01"]}])
+        policy = KnowledgeAccessPolicy([
+            {"tenant_id": "tenant-a", "user_id": "user-a", "device_ids": ["AA:BB:CC:DD:EE:01"]},
+            {"tenant_id": "tenant-a", "user_id": "10:20:BA:6E:0B:90", "device_ids": ["10:20:BA:6E:0B:90"]},
+        ])
         app = web.Application()
         app.add_routes(KnowledgeHandler(self.auth, repository, policy).routes())
         self.client = TestClient(TestServer(app))
