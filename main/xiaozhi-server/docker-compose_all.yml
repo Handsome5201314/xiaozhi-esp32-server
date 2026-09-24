@@ -5,7 +5,7 @@ name: xiaozhi-server
 services:
   # 管理入口：manager-api和manager-web模块
   xiaozhi-esp32-server-web:
-    image: xiaozhi-esp32-server:web-v096-hermes-multitenant-20260924-user-provider-fix
+    image: xiaozhi-esp32-server:web-v096-hermes-multitenant-20260924-delete-empty-agent-fix
     container_name: xiaozhi-esp32-server-web
     restart: always
     networks:

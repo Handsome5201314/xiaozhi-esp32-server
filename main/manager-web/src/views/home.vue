@@ -145,6 +145,7 @@ import DeviceItem from '@/components/DeviceItem.vue';
 import HeaderBar from '@/components/HeaderBar.vue';
 import VersionFooter from '@/components/VersionFooter.vue';
 import featureManager from '@/utils/featureManager';
+import { resolveDeleteAgentTarget } from '@/utils/agentDeletion.mjs';
 
 export default {
   name: 'HomePage',
@@ -259,16 +260,15 @@ export default {
       const targetAgent = typeof device === 'object'
         ? device
         : this.devices.find((item) => item.agentId === device || item.id === device);
-      const agentId = targetAgent?.agentId || targetAgent?.id;
-      const agentName = targetAgent?.agentName || '';
+      const resolvedTarget = resolveDeleteAgentTarget(targetAgent);
 
-      if (!agentId || !agentName) {
+      if (!resolvedTarget) {
         this.$message.error(this.$t('home.deleteAgentMissingInfo'));
         return;
       }
 
-      this.deleteTargetAgentId = agentId;
-      this.deleteTargetAgentName = agentName;
+      this.deleteTargetAgentId = resolvedTarget.id;
+      this.deleteTargetAgentName = resolvedTarget.confirmationValue;
       this.deleteAgentConfirmText = '';
       this.deleteAgentDialogVisible = true;
       this.$nextTick(() => {
