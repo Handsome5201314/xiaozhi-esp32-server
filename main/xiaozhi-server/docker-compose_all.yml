@@ -5,7 +5,7 @@ name: xiaozhi-server
 services:
   # 管理入口：manager-api和manager-web模块
   xiaozhi-esp32-server-web:
-    image: xiaozhi-esp32-server:web-v096-hermes-multitenant-20260924-delete-empty-agent-fix
+    image: xiaozhi-esp32-server:web-v096-hermes-multitenant-20260924-hermes-save-error-fix
     container_name: xiaozhi-esp32-server-web
     restart: always
     networks:
@@ -26,6 +26,8 @@ services:
       - SPRING_DATA_REDIS_HOST=xiaozhi-esp32-server-redis
       - SPRING_DATA_REDIS_PASSWORD=
       - SPRING_DATA_REDIS_PORT=6379
+      # Only explicitly configured internal Hermes hosts are allowed.
+      - XIAOZHI_HERMES_ALLOWED_HOSTS=${XIAOZHI_HERMES_ALLOWED_HOSTS:-}
     volumes:
       # 配置文件目录
       - ./uploadfile:/uploadfile
@@ -51,6 +53,7 @@ services:
       - seccomp:unconfined
     environment:
       - TZ=Asia/Shanghai
+      - XIAOZHI_HERMES_ALLOWED_HOSTS=${XIAOZHI_HERMES_ALLOWED_HOSTS:-}
       - METALIO_KNOWLEDGE_ENABLED=${METALIO_KNOWLEDGE_ENABLED:-1}
       - METALIO_KNOWLEDGE_SOURCE_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/source
       - METALIO_KNOWLEDGE_PUBLISH_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/published

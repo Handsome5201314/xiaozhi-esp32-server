@@ -22,9 +22,9 @@ export default {
     RequestService.sendRequest().url(`${getServiceUrl()}/provider/hermes`).method('GET')
       .success(callback).send()
   },
-  hermesSave(instance, callback) {
+  hermesSave(instance, callback, failCallback) {
     RequestService.sendRequest().url(`${getServiceUrl()}/provider/hermes`).method('POST')
-      .data(instance).success(callback).send()
+      .data(instance).success(callback).fail(failCallback).send()
   },
   hermesPutSecret(id, value, callback) {
     RequestService.sendRequest().url(`${getServiceUrl()}/provider/hermes/${id}/secret`).method('POST')

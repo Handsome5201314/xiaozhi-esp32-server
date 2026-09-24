@@ -67,7 +67,11 @@ export default {
     save () {
       this.saving = true
       const done = res => { this.saving = false; if (res.data && res.data.code === 0) { this.visible = false; this.load() } else this.$message.error((res.data && res.data.msg) || '保存失败') }
-      if (this.formMode === 'hermes') Api.tenantProvider.hermesSave(this.form, done); else Api.tenantProvider.save(this.form, done)
+      const failed = res => {
+        this.saving = false
+        this.$message.error((res && res.data && res.data.msg) || '保存失败')
+      }
+      if (this.formMode === 'hermes') Api.tenantProvider.hermesSave(this.form, done, failed); else Api.tenantProvider.save(this.form, done)
     },
     putProviderSecret (row) { this.$prompt('输入新密钥，保存后不会再次显示原文', '更新密钥', { inputType: 'password' }).then(({ value }) => Api.tenantProvider.putSecret(row.id, value, res => { if (res.data && res.data.code === 0) { this.$message.success('密钥已更新'); this.load() } else this.$message.error('密钥更新失败') })).catch(() => {}) },
     putHermesSecret (row) { this.$prompt('输入 Hermes API Key，保存后不会再次显示原文', '更新密钥', { inputType: 'password' }).then(({ value }) => Api.tenantProvider.hermesPutSecret(row.id, value, res => { if (res.data && res.data.code === 0) { this.$message.success('密钥已更新'); this.load() } else this.$message.error('密钥更新失败') })).catch(() => {}) },

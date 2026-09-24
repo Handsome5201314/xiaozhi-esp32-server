@@ -22,6 +22,14 @@ const routerSource = await readFile(
   new URL('../src/router/index.js', import.meta.url),
   'utf8',
 );
+const tenantProviderApiSource = await readFile(
+  new URL('../src/apis/module/tenantProvider.js', import.meta.url),
+  'utf8',
+);
+const tenantProviderViewSource = await readFile(
+  new URL('../src/views/TenantProviderManagement.vue', import.meta.url),
+  'utf8',
+);
 
 test('address-book permission state consistently uses the target device MAC', () => {
   assert.match(
@@ -92,4 +100,11 @@ test('普通用户可以从头像菜单进入自己的 Provider / Hermes 配置'
   assert.match(headerBarSource, /if \(!this\.userInfo\.superAdmin\)\s*\{[\s\S]*header\.tenantProviderManagement/);
   assert.match(headerBarSource, /case "tenantProviderManagement":\s*this\.handleRouter\("tenantProviderManagement"\)/);
   assert.match(routerSource, /protectedRoutes\s*=\s*\[[\s\S]*'TenantProviderManagement'/);
+});
+
+test('Hermes 保存失败时释放 loading 并显示后端错误', () => {
+  assert.match(tenantProviderApiSource, /hermesSave\(instance, callback, failCallback\)/);
+  assert.match(tenantProviderApiSource, /\.success\(callback\)\.fail\(failCallback\)/);
+  assert.match(tenantProviderViewSource, /this\.saving = false/);
+  assert.match(tenantProviderViewSource, /Api\.tenantProvider\.hermesSave\(this\.form, done, failed\)/);
 });

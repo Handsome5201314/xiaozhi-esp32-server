@@ -10,6 +10,8 @@ Hermes 由用户独立部署，Server 只通过用户登记的 HTTPS 地址调�
 4. 确认 Server 与 manager-api 使用同一 `XIAOZHI_SECRET_MASTER_KEY`。
 5. 默认不开启 Metalio 路由；验证前设置 `METALIO_HERMES_ROUTING_ENABLED=1`。需要内网主机时，在 manager-api 和 Server 同时设置 `XIAOZHI_HERMES_ALLOWED_HOSTS=hermes-medical.internal`。
 
+内网地址只能在 Server 和 manager-api 所在的运行环境可达时使用。`192.168.x.x` 等地址不会因为浏览器能访问而自动对公网部署可达；公网智控台仍需要可从 Server 容器访问的 HTTPS 域名、VPN 地址或受控隧道。`http://127.0.0.1:8643` 也不能直接登记，必须先由 Hermes 自己的 HTTPS 反代提供地址，并让 Server 容器信任该反代证书。
+
 设备 hello 声明 `model=metalio-e-ink-4` 后，Server 按设备精确绑定、用户绑定、租户可用实例和优先级选择 Hermes。没有可用实例或 Hermes 返回错误时，当前会话返回服务错误，不切换到普通 Provider。其他设备继续使用原 Provider、知识库和工具链路。
 
 ## 回滚

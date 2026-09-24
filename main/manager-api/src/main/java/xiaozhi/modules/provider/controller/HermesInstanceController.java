@@ -41,7 +41,11 @@ public class HermesInstanceController {
     @Operation(summary = "新增或修改 Hermes 实例")
     public Result<HermesInstanceEntity> save(@RequestBody HermesInstanceEntity request) {
         UserDetail user = SecurityUser.getUser();
-        return new Result<HermesInstanceEntity>().ok(service.saveForUser(user.getId(), request));
+        try {
+            return new Result<HermesInstanceEntity>().ok(service.saveForUser(user.getId(), request));
+        } catch (IllegalArgumentException ex) {
+            return new Result<HermesInstanceEntity>().error(400, ex.getMessage());
+        }
     }
 
     @PostMapping("/{id}/secret")
