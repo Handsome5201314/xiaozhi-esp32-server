@@ -64,8 +64,9 @@ export default new Vuex.Store({
     fetchPubConfig({ commit }) {
       return new Promise((resolve) => {
         Api.user.getPubConfig((response) => {
-          if (response && response.code === 0) {
-            commit('setPubConfig', response.data || {});
+          const payload = response && response.data ? response.data : response;
+          if (payload && payload.code === 0) {
+            commit('setPubConfig', payload.data || {});
           }
           resolve();
         });
