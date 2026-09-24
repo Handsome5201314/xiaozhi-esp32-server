@@ -7,7 +7,7 @@ FROM `sys_user` u
 LEFT JOIN `ai_tenant_member` m
   ON m.`user_id` = u.`id` AND m.`status` = 'ACTIVE'
 WHERE m.`user_id` IS NULL
-ON DUPLICATE KEY UPDATE `id` = `id`;
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 INSERT INTO `ai_tenant_member` (`tenant_id`, `user_id`, `role_code`, `status`)
 SELECT t.`id`, u.`id`, 'member', 'ACTIVE'
@@ -16,7 +16,7 @@ JOIN `ai_tenant` t ON t.`name` = CONCAT('user-', u.`id`)
 LEFT JOIN `ai_tenant_member` m
   ON m.`user_id` = u.`id` AND m.`status` = 'ACTIVE'
 WHERE m.`user_id` IS NULL
-ON DUPLICATE KEY UPDATE `status` = 'ACTIVE';
+ON DUPLICATE KEY UPDATE `status` = VALUES(`status`);
 
 -- Existing devices inherit the deterministic active tenant of their owner.
 -- The MIN() choice is stable for legacy users that already have memberships.
