@@ -73,4 +73,7 @@ public class KnowledgeBaseDTO implements Serializable {
 
     @Schema(description = "文档数量")
     private Integer documentCount;
+
+    @Schema(description = "异常提示")
+    private String errorMessage;
 }
