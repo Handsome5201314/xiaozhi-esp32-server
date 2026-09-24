@@ -14,6 +14,14 @@ const functionDialogSource = await readFile(
   new URL('../src/components/FunctionDialog.vue', import.meta.url),
   'utf8',
 );
+const headerBarSource = await readFile(
+  new URL('../src/components/HeaderBar.vue', import.meta.url),
+  'utf8',
+);
+const routerSource = await readFile(
+  new URL('../src/router/index.js', import.meta.url),
+  'utf8',
+);
 
 test('address-book permission state consistently uses the target device MAC', () => {
   assert.match(
@@ -77,4 +85,11 @@ test('function dialog footer stays above the expanding MCP tools section', () =>
   assert.ok(mcpLayer, 'MCP section should define its stacking layer');
   assert.ok(footerLayer, 'drawer footer should define its stacking layer');
   assert.ok(Number(footerLayer[1]) > Number(mcpLayer[1]));
+});
+
+test('普通用户可以从头像菜单进入自己的 Provider / Hermes 配置', () => {
+  assert.match(headerBarSource, /tenantProviderManagement:\s*"\/tenant-provider-management"/);
+  assert.match(headerBarSource, /if \(!this\.userInfo\.superAdmin\)\s*\{[\s\S]*header\.tenantProviderManagement/);
+  assert.match(headerBarSource, /case "tenantProviderManagement":\s*this\.handleRouter\("tenantProviderManagement"\)/);
+  assert.match(routerSource, /protectedRoutes\s*=\s*\[[\s\S]*'TenantProviderManagement'/);
 });

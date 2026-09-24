@@ -66,6 +66,7 @@ import xiaozhi.modules.device.vo.UserShowDeviceListVO;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.sys.service.SysParamsService;
 import xiaozhi.modules.sys.service.SysUserUtilService;
+import xiaozhi.modules.tenant.service.TenantProvisioningService;
 
 @Slf4j
 @Service
@@ -78,6 +79,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
     private final RedisUtils redisUtils;
     private final OtaService otaService;
     private final DeviceAddressBookService deviceAddressBookService;
+    private final TenantProvisioningService tenantProvisioningService;
 
     @Async
     public void updateDeviceConnectionInfo(String agentId, String deviceId, String appVersion) {
@@ -139,6 +141,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         deviceEntity.setAppVersion(appVersion);
         deviceEntity.setMacAddress(macAddress);
         deviceEntity.setUserId(user.getId());
+        deviceEntity.setTenantId(tenantProvisioningService.findActiveTenantId(user.getId()));
         deviceEntity.setCreator(user.getId());
         deviceEntity.setAutoUpdate(1);
         deviceEntity.setCreateDate(currentTime);
@@ -560,6 +563,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         DeviceEntity entity = new DeviceEntity();
         entity.setId(dto.getMacAddress());
         entity.setUserId(userId);
+        entity.setTenantId(tenantProvisioningService.findActiveTenantId(userId));
         entity.setAgentId(dto.getAgentId());
         entity.setBoard(dto.getBoard());
         entity.setAppVersion(dto.getAppVersion());

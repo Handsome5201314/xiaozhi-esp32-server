@@ -33,6 +33,7 @@ import xiaozhi.modules.sys.enums.SuperAdminEnum;
 import xiaozhi.modules.sys.service.SysParamsService;
 import xiaozhi.modules.sys.service.SysUserService;
 import xiaozhi.modules.sys.vo.AdminPageUserVO;
+import xiaozhi.modules.tenant.service.TenantProvisioningService;
 
 /**
  * 系统用户
@@ -47,6 +48,8 @@ public class SysUserServiceImpl extends BaseServiceImpl<SysUserDao, SysUserEntit
     private final AgentService agentService;
 
     private final SysParamsService sysParamsService;
+
+    private final TenantProvisioningService tenantProvisioningService;
 
     @Override
     public SysUserDTO getByUsername(String username) {
@@ -91,6 +94,10 @@ public class SysUserServiceImpl extends BaseServiceImpl<SysUserDao, SysUserEntit
         entity.setStatus(1);
 
         insert(entity);
+        // Tenant provisioning is part of registration's transaction. A user
+        // without an active membership cannot safely access tenant-scoped
+        // providers such as Hermes.
+        tenantProvisioningService.ensurePersonalTenant(entity.getId());
     }
 
     @Override

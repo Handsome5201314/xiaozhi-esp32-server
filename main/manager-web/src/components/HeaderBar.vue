@@ -216,6 +216,7 @@ export default {
         otaManagement: "/ota-management",
         dictManagement: "/dict-management",
         providerManagement: "/provider-management",
+        tenantProviderManagement: "/tenant-provider-management",
         agentTemplate: "/agent-template-management",
         replacementWordManagement: "/replacement-word-management",
         serverSideManagement: "/server-side-management",
@@ -278,7 +279,7 @@ export default {
     },
     // 用户菜单选项
     userMenuOptions() {
-      return [
+      const options = [
         {
           label: this.currentLanguageText,
           value: "language",
@@ -318,6 +319,15 @@ export default {
           value: "logout",
         },
       ];
+
+      if (!this.userInfo.superAdmin) {
+        options.splice(1, 0, {
+          label: this.$t("header.tenantProviderManagement"),
+          value: "tenantProviderManagement",
+        });
+      }
+
+      return options;
     },
   },
   async mounted() {
@@ -382,6 +392,9 @@ export default {
         switch (action) {
           case "changePassword":
             this.showChangePasswordDialog();
+            break;
+          case "tenantProviderManagement":
+            this.handleRouter("tenantProviderManagement");
             break;
           case "logout":
             this.handleLogout();

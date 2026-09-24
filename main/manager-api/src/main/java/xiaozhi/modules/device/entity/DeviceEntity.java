@@ -25,6 +25,9 @@ public class DeviceEntity {
     @Schema(description = "关联用户ID")
     private Long userId;
 
+    /** Tenant scope used by tenant-bound provider and Hermes routing. */
+    private Long tenantId;
+
     @Schema(description = "MAC地址")
     private String macAddress;
 

@@ -21,6 +21,7 @@ export default {
   'header.searchHistory': 'Suchverlauf',
   'header.clearHistory': 'Verlauf löschen',
   'header.providerManagement': 'Anbieterverwaltung',
+  'header.tenantProviderManagement': 'Meine Provider / Hermes',
   'header.serverSideManagement': 'Serververwaltung',
   'header.replacementWordManagement': 'Ersetzungswortverwaltung',
   'header.featureManagement': 'Systemfunktionsverwaltung',
