@@ -30,7 +30,7 @@
           <el-form-item label="名称"><el-input v-model="form.name" /></el-form-item>
           <el-form-item label="HTTPS 地址"><el-input v-model="form.baseUrl" /></el-form-item>
           <el-form-item label="模型名称"><el-input v-model="form.model" /></el-form-item>
-          <el-form-item label="能力 JSON"><el-input v-model="form.capabilities" placeholder="例如 [\"chat\",\"summary\"]" /></el-form-item>
+          <el-form-item label="能力 JSON"><el-input v-model="form.capabilities" placeholder='例如 ["chat","summary"]' /></el-form-item>
           <el-form-item label="设备 ID（可选）"><el-input v-model="form.deviceId" /></el-form-item>
           <el-form-item label="优先级"><el-input-number v-model="form.priority" :min="0" :max="9999" /></el-form-item>
           <el-form-item label="启用"><el-switch v-model="form.isEnabled" :active-value="1" :inactive-value="0" /></el-form-item>
