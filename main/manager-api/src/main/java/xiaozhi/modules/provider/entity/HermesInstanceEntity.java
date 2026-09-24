@@ -2,6 +2,7 @@ package xiaozhi.modules.provider.entity;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -18,7 +19,9 @@ public class HermesInstanceEntity {
     private String deviceId;
     private String name;
     private String baseUrl;
+    private String model;
     private String secretRef;
+    @JsonProperty("capabilities")
     private String capabilitiesJson;
     private Integer priority;
     private Integer isEnabled;

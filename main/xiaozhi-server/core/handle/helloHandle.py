@@ -68,6 +68,11 @@ async def handleHelloMessage(conn: "ConnectionHandler", msg_json):
 
     await conn.websocket.send(json.dumps(conn.welcome_msg))
 
+    # Route only the declared Metalio capability to Hermes. Other hardware
+    # keeps the process-wide Provider selected by the existing configuration.
+    await conn.configure_hermes_for_device()
+    conn._hello_capabilities_ready.set()
+
     # A reconnecting device may have missed its daily summary while offline.
     # Only a validated short-lived session can use this path; legacy auth has
     # no tenant/user context and is intentionally excluded.

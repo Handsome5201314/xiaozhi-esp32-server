@@ -10,6 +10,7 @@ import asyncio
 import threading
 import traceback
 import subprocess
+import os
 import websockets
 import opuslib_next
 import numpy as np
@@ -41,11 +42,14 @@ from config.config_loader import get_private_config_from_api
 from core.providers.tts.dto.dto import ContentType, TTSMessageDTO, SentenceType
 from config.logger import setup_logging, build_module_string, create_connection_logger
 from config.manage_api_client import DeviceNotFoundException, DeviceBindException, generate_and_save_chat_title
+from config.manage_api_client import get_hermes_routing
 from core.utils.prompt_manager import PromptManager
 from core.utils.voiceprint_provider import VoiceprintProvider
 from core.utils.util import get_system_error_response
 from core.utils import textUtils
 from core.security.session import SessionContext
+from core.routing.hermes_router import HermesInstance, HermesResolver
+from core.providers.llm.hermes import HermesChatClient, HermesUnavailableLLM
 
 
 TAG = __name__
@@ -94,6 +98,11 @@ class ConnectionHandler:
         self.logger = setup_logging()
         self.server = server  # 保存server实例的引用
         self.session_context: SessionContext | None = None
+        self.device_capabilities = {}
+        self.hermes_instance = None
+        self._hello_capabilities_ready = asyncio.Event()
+        self._hermes_routing_requested = False
+        self._hermes_client = None
 
         self.need_bind = False  # 是否需要绑定设备
         self.bind_completed_event = asyncio.Event()
@@ -201,6 +210,62 @@ class ConnectionHandler:
         self.calling = False
         # 标记当前是否为来电接听模式
         self.incoming_call = None
+
+    def _metalio_hermes_enabled(self):
+        configured = self.config.get("hermes_routing", {}).get("enabled")
+        if configured is not None:
+            return bool(configured)
+        return os.environ.get("METALIO_HERMES_ROUTING_ENABLED", "0").lower() in ("1", "true", "yes", "on")
+
+    def is_metalio_device(self):
+        return self.device_capabilities.get("model") == "metalio-e-ink-4"
+
+    async def configure_hermes_for_device(self):
+        """Resolve a tenant-scoped Hermes instance after hello, without exposing its key."""
+        if not self.is_metalio_device() or not self._metalio_hermes_enabled():
+            return
+        self._hermes_routing_requested = True
+        self.llm = HermesUnavailableLLM()
+        self._hermes_client = self.llm
+        context = self.session_context
+        if context is None:
+            self.logger.bind(tag=TAG).warning("Metalio Hermes 路由需要短期设备会话")
+            return
+        try:
+            rows = await get_hermes_routing(context.tenant_id, context.user_id, context.device_id)
+            instances = []
+            for row in rows or []:
+                raw_user_id = row.get("userId")
+                capabilities = row.get("capabilitiesJson") or row.get("capabilities") or []
+                if isinstance(capabilities, str):
+                    try:
+                        capabilities = json.loads(capabilities)
+                    except json.JSONDecodeError:
+                        capabilities = []
+                if isinstance(capabilities, dict):
+                    capabilities = capabilities.keys()
+                capabilities = set(str(item) for item in (capabilities or []))
+                capabilities.add("chat")
+                instances.append(HermesInstance(
+                    id=str(row.get("id")), tenant_id=str(row.get("tenantId", context.tenant_id)),
+                    user_id=None if raw_user_id is None else str(raw_user_id), device_id=row.get("deviceId"),
+                    base_url=str(row.get("baseUrl", "")), capabilities=frozenset(capabilities),
+                    priority=int(row.get("priority", 100)), enabled=True, healthy=True,
+                    model=str(row.get("model") or ""), secret=str(row.get("secret") or "")))
+            resolver = HermesResolver(instances, self.config.get("hermes_routing", {}).get("allowed_hosts", []))
+            instance = resolver.resolve(context.tenant_id, context.user_id, context.device_id, "chat")
+            self.hermes_instance = instance
+            self._hermes_client = HermesChatClient(
+                instance.base_url, instance.secret, instance.model,
+                timeout=float(self.config.get("hermes_routing", {}).get("timeout", 60)),
+                capability_context=self.device_capabilities)
+            self.llm = self._hermes_client
+            self.logger.bind(tag=TAG).info("Metalio Hermes 路由已启用: %s", instance.id)
+        except Exception as exc:
+            self.hermes_instance = None
+            self._hermes_client = HermesUnavailableLLM()
+            self.llm = self._hermes_client
+            self.logger.bind(tag=TAG).error("Metalio Hermes 路由失败: %s", type(exc).__name__)
 
     async def handle_connection(self, ws: websockets.ServerConnection):
         try:
@@ -626,7 +691,7 @@ class ConnectionHandler:
             """初始化组件"""
             # An explicitly empty agent prompt is meaningful: keep it empty and
             # do not wrap it in the global base-prompt template.
-            if self.config.get("prompt"):
+            if self.config.get("prompt") and not (self.is_metalio_device() and self._metalio_hermes_enabled()):
                 user_prompt = self.config["prompt"]
                 # 使用快速提示词进行初始化
                 prompt = self.prompt_manager.get_quick_prompt(user_prompt)
@@ -667,6 +732,10 @@ class ConnectionHandler:
         # Preserve the configured empty prompt verbatim.  This is required for
         # user-managed Hermes/provider sessions where the Server must not add a
         # hidden role or identity prompt.
+        if self.is_metalio_device() and self._metalio_hermes_enabled():
+            self.logger.bind(tag=TAG).debug("Metalio Hermes 会话保留原始 system prompt")
+            return
+
         if not self.config.get("prompt"):
             self.logger.bind(tag=TAG).debug("智能体 system prompt 为空，跳过增强")
             return
@@ -805,6 +874,11 @@ class ConnectionHandler:
         try:
             # 异步获取差异化配置
             await self._initialize_private_config_async()
+            if self._metalio_hermes_enabled():
+                try:
+                    await asyncio.wait_for(self._hello_capabilities_ready.wait(), timeout=30)
+                except asyncio.TimeoutError:
+                    self.logger.bind(tag=TAG).warning("等待设备能力声明超时，Metalio Hermes 路由保持不可用")
             # 在线程池中初始化组件
             self.executor.submit(self._initialize_components)
         except Exception as e:
@@ -964,6 +1038,8 @@ class ConnectionHandler:
             self.asr = modules["asr"]
         if modules.get("llm", None) is not None:
             self.llm = modules["llm"]
+        if self._hermes_routing_requested:
+            self.llm = self._hermes_client or HermesUnavailableLLM()
         if modules.get("intent", None) is not None:
             self.intent = modules["intent"]
         if modules.get("memory", None) is not None:

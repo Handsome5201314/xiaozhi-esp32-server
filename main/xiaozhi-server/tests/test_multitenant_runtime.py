@@ -85,6 +85,13 @@ class ProviderResolverTests(unittest.TestCase):
         ], allowed_hosts=["example.com"])
         self.assertEqual(resolver.resolve("t", "u", "d").id, "user")
 
+    def test_hermes_tenant_instance_is_last_fallback(self):
+        resolver = HermesResolver([
+            HermesInstance("tenant", "t", None, None, "https://example.com", frozenset({"chat"}), priority=1),
+            HermesInstance("other", "other", None, None, "https://example.com", frozenset({"chat"}), priority=0),
+        ], allowed_hosts=["example.com"])
+        self.assertEqual(resolver.resolve("t", "u", "d").id, "tenant")
+
 
 if __name__ == "__main__":
     unittest.main()

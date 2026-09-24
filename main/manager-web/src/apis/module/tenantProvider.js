@@ -17,5 +17,21 @@ export default {
   remove(id, callback) {
     RequestService.sendRequest().url(`${getServiceUrl()}/provider/profiles/${id}`).method('DELETE')
       .success(callback).send()
+  },
+  hermesList(callback) {
+    RequestService.sendRequest().url(`${getServiceUrl()}/provider/hermes`).method('GET')
+      .success(callback).send()
+  },
+  hermesSave(instance, callback) {
+    RequestService.sendRequest().url(`${getServiceUrl()}/provider/hermes`).method('POST')
+      .data(instance).success(callback).send()
+  },
+  hermesPutSecret(id, value, callback) {
+    RequestService.sendRequest().url(`${getServiceUrl()}/provider/hermes/${id}/secret`).method('POST')
+      .data({ value }).success(callback).send()
+  },
+  hermesRemove(id, callback) {
+    RequestService.sendRequest().url(`${getServiceUrl()}/provider/hermes/${id}`).method('DELETE')
+      .success(callback).send()
   }
 }

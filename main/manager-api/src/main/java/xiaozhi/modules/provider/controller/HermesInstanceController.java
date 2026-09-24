@@ -1,6 +1,7 @@
 package xiaozhi.modules.provider.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,6 +42,19 @@ public class HermesInstanceController {
     public Result<HermesInstanceEntity> save(@RequestBody HermesInstanceEntity request) {
         UserDetail user = SecurityUser.getUser();
         return new Result<HermesInstanceEntity>().ok(service.saveForUser(user.getId(), request));
+    }
+
+    @PostMapping("/{id}/secret")
+    @RequiresPermissions("sys:role:normal")
+    @Operation(summary = "写入 Hermes API Key；响应只返回掩码")
+    public Result<Map<String, String>> putSecret(@PathVariable String id, @RequestBody Map<String, String> request) {
+        UserDetail user = SecurityUser.getUser();
+        String value = request == null ? null : request.get("value");
+        try {
+            return new Result<Map<String, String>>().ok(service.putSecretForUser(user.getId(), id, value));
+        } catch (IllegalArgumentException ex) {
+            return new Result<Map<String, String>>().error(ex.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
