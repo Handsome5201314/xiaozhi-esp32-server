@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import os
+import ssl
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -31,7 +33,7 @@ class _ToolCall:
 class HermesChatClient:
     def __init__(self, base_url: str, api_key: str, model: str = "",
                  timeout: float = 60.0, stream: bool = True, transport=None,
-                 capability_context=None):
+                 capability_context=None, ca_cert: str | None = None):
         if not base_url.lower().startswith("https://"):
             raise ValueError("Hermes 地址必须使用 HTTPS")
         if not api_key or not api_key.strip():
@@ -43,6 +45,17 @@ class HermesChatClient:
         self.stream = stream
         self.transport = transport
         self.capability_context = capability_context or {}
+        self._verify = self._build_verify(ca_cert or os.environ.get("XIAOZHI_HERMES_CA_CERT", ""))
+
+    @staticmethod
+    def _build_verify(ca_cert: str):
+        ca_cert = ca_cert.strip()
+        if not ca_cert:
+            return True
+        try:
+            return ssl.create_default_context(cafile=ca_cert)
+        except (OSError, ssl.SSLError) as exc:
+            raise ValueError("Hermes CA 证书不可用") from exc
 
     def _messages(self, messages):
         if not self.capability_context:
@@ -63,9 +76,11 @@ class HermesChatClient:
         if tools:
             payload["tools"] = tools
         try:
-            return httpx.Client(timeout=self.timeout, follow_redirects=False, trust_env=False, transport=self.transport)
+            return httpx.Client(timeout=self.timeout, follow_redirects=False, trust_env=False,
+                                verify=self._verify, transport=self.transport)
         except TypeError:
-            return httpx.Client(timeout=self.timeout, follow_redirects=False, transport=self.transport)
+            return httpx.Client(timeout=self.timeout, follow_redirects=False, verify=self._verify,
+                                transport=self.transport)
 
     def _headers(self):
         return {"Authorization": "Bearer " + self.api_key,

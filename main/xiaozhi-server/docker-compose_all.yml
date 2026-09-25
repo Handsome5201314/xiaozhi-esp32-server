@@ -10,6 +10,8 @@ services:
     restart: always
     networks:
       - default
+    extra_hosts:
+      - hermes-medical.internal:192.168.31.29
     depends_on:
       xiaozhi-esp32-server-db:
         condition: service_healthy
@@ -34,7 +36,7 @@ services:
 
   # Server模块
   xiaozhi-esp32-server:
-    image: xiaozhi-esp32-server:v0.9.6-hermes-multitenant-20260924
+    image: xiaozhi-esp32-server:v0.9.6-hermes-multitenant-20260924-hermes-local-https
     container_name: xiaozhi-esp32-server
     depends_on:
       - xiaozhi-esp32-server-db
@@ -44,6 +46,8 @@ services:
       - ./data/multitenant-runtime.env
     networks:
       - default
+    extra_hosts:
+      - hermes-medical.internal:192.168.31.29
     ports:
       # ws服务端
       - "8000:8000"
@@ -54,6 +58,7 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - XIAOZHI_HERMES_ALLOWED_HOSTS=${XIAOZHI_HERMES_ALLOWED_HOSTS:-}
+      - XIAOZHI_HERMES_CA_CERT=/etc/xiaozhi/hermes/hermes-proxy-ca.crt
       - METALIO_KNOWLEDGE_ENABLED=${METALIO_KNOWLEDGE_ENABLED:-1}
       - METALIO_KNOWLEDGE_SOURCE_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/source
       - METALIO_KNOWLEDGE_PUBLISH_ROOT=/opt/xiaozhi-esp32-server/data/knowledge/published
@@ -61,6 +66,7 @@ services:
     volumes:
       # 配置文件目录
       - ./data:/opt/xiaozhi-esp32-server/data
+      - ./data/hermes-proxy/hermes-proxy-ca.crt:/etc/xiaozhi/hermes/hermes-proxy-ca.crt:ro
       # 模型文件挂接，很重要
       - ./models/SenseVoiceSmall/model.pt:/opt/xiaozhi-esp32-server/models/SenseVoiceSmall/model.pt
 

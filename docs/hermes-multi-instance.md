@@ -12,6 +12,21 @@ Hermes 由用户独立部署，Server 只通过用户登记的 HTTPS 地址调�
 
 内网地址只能在 Server 和 manager-api 所在的运行环境可达时使用。`192.168.x.x` 等地址不会因为浏览器能访问而自动对公网部署可达；公网智控台仍需要可从 Server 容器访问的 HTTPS 域名、VPN 地址或受控隧道。`http://127.0.0.1:8643` 也不能直接登记，必须先由 Hermes 自己的 HTTPS 反代提供地址，并让 Server 容器信任该反代证书。
 
+### 本机 Docker 反代
+
+当前本机部署使用独立的 Caddy 容器，把宿主机 Hermes 的 `127.0.0.1:8643` 转为局域网 HTTPS：
+
+```powershell
+cd main/xiaozhi-server
+docker compose -p xiaozhi-hermes-proxy -f docker-compose_hermes_proxy.yml up -d
+```
+
+本机登记地址可填写 `https://192.168.31.29:8443`。证书和本地 CA 位于被 Git 忽略的 `data/hermes-proxy/`，CA 只读挂载给小智 Server；不要把证书私钥提交到仓库。当前 compose 已为 manager-api 和 Server 注入 `XIAOZHI_HERMES_ALLOWED_HOSTS`，并将内部主机解析到局域网 IP。停止反代使用：
+
+```powershell
+docker compose -p xiaozhi-hermes-proxy -f docker-compose_hermes_proxy.yml down
+```
+
 设备 hello 声明 `model=metalio-e-ink-4` 后，Server 按设备精确绑定、用户绑定、租户可用实例和优先级选择 Hermes。没有可用实例或 Hermes 返回错误时，当前会话返回服务错误，不切换到普通 Provider。其他设备继续使用原 Provider、知识库和工具链路。
 
 ## 回滚

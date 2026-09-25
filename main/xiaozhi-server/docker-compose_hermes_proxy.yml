@@ -1,0 +1,17 @@
+name: xiaozhi-hermes-proxy
+
+services:
+  hermes-https-proxy:
+    image: caddy:2.10-alpine
+    container_name: xiaozhi-hermes-https-proxy
+    restart: unless-stopped
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "192.168.31.29:8443:8443"
+    volumes:
+      - ./data/hermes-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data/hermes-proxy/hermes-proxy.crt:/etc/caddy/certs/hermes-proxy.crt:ro
+      - ./data/hermes-proxy/hermes-proxy.key:/etc/caddy/certs/hermes-proxy.key:ro
+      - ./data/hermes-proxy/caddy-data:/data
+      - ./data/hermes-proxy/caddy-config:/config

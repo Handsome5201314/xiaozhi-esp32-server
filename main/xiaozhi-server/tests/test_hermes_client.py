@@ -1,4 +1,6 @@
 import json
+import os
+import tempfile
 import unittest
 
 import httpx
@@ -54,6 +56,11 @@ class HermesClientTest(unittest.TestCase):
                                   transport=self.transport(malformed))
         with self.assertRaises(HermesChatError):
             list(client.response("s", []))
+
+    def test_invalid_configured_ca_is_rejected_before_request(self):
+        with self.assertRaisesRegex(ValueError, "CA"):
+            HermesChatClient("https://hermes.example", "secret", ca_cert=os.path.join(
+                tempfile.gettempdir(), "missing-hermes-ca.crt"))
 
 
 if __name__ == "__main__":
